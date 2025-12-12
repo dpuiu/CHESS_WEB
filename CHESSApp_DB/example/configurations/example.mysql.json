@@ -1,7 +1,0 @@
-{
-    "CHESSDB_HOST":"localhost",
-    "CHESSDB_USER":"chess_master",
-    "CHESSDB_PASSWORD":"qwerty",
-    "CHESSDB_PORT":"3306",
-    "CHESSDB_NAME":"CHESS_DB"
-}
