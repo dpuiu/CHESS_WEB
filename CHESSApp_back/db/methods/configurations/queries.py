@@ -55,7 +55,10 @@ def get_configuration_by_id(configuration_id):
                 c.assembly_id,
                 c.nomenclature,
                 c.source_id,
-                c.sv_id
+                c.sv_id,
+                c.sequence_id,
+                c.start,
+                c.end
             FROM configurations c
             WHERE c.configuration_id = :configuration_id
         """)
@@ -73,6 +76,9 @@ def get_configuration_by_id(configuration_id):
                 'nomenclature': row.nomenclature,
                 'source_id': row.source_id,
                 'sv_id': row.sv_id,
+                'sequence_id': row.sequence_id,
+                'start': row.start,
+                'end': row.end
             }
         
         return None

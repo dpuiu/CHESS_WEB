@@ -9,7 +9,7 @@ from .queries import *
 from db.methods.utils import *
 from .utils import *
 from ..TempFileManager import get_temp_file_manager
-from config.paths import FASTA_FILES_DIR, SOURCE_FILES_DIR
+from db.db import get_fasta_files_dir, get_source_files_dir
 
 # ============================================================================
 # ORGANISM
@@ -159,7 +159,7 @@ def process_fasta_file(assembly_id, nomenclature, file):
             return {"success": False, "message": "Assembly not found"}
         
         safe_filename = f"{assembly.taxonomy_id}_{assembly_id}_{nomenclature}.fasta"
-        file_path = os.path.join(FASTA_FILES_DIR, safe_filename)
+        file_path = os.path.join(get_fasta_files_dir(), safe_filename)
         file.save(file_path)
         
         try:
@@ -334,7 +334,6 @@ def process_nomenclature_tsv(source_file, assembly_id, source_nomenclature, new_
     Process a TSV file to create a new nomenclature mapping for an assembly.
     The TSV file should have two columns: source_id and new_id.
     """
-    
     try:
         assembly = get_assembly(assembly_id)
         if not assembly or len(assembly) == 0:
@@ -396,7 +395,7 @@ def process_nomenclature_tsv(source_file, assembly_id, source_nomenclature, new_
                 if os.path.exists(source_file_path):
                     # Create new filename for the new nomenclature
                     new_filename = f"{assembly.taxonomy_id}_{assembly_id}_{new_nomenclature}.fasta"
-                    new_full_path = os.path.join(FASTA_FILES_DIR, new_filename)
+                    new_full_path = os.path.join(get_fasta_files_dir(), new_filename)
                     
                     translate_fasta_file(source_file_path, new_full_path, mapping)
                     validate_and_index_fasta(new_full_path)

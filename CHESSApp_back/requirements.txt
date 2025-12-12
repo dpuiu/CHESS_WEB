@@ -1,0 +1,22 @@
+# CHESS Web App Backend - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core Flask framework
+flask>=3.0.0
+
+# Database ORM and MySQL support
+flask-sqlalchemy>=3.1.0
+sqlalchemy>=2.0.0
+pymysql>=1.1.0
+
+# MySQL authentication encryption
+cryptography>=41.0.0
+
+# CORS support for cross-origin requests
+flask-cors>=4.0.0
+
+# Genomic file handling (FASTA/BAM files)
+pysam>=0.22.0
+
+# Production WSGI server (optional, for deployment)
+gunicorn>=21.0.0

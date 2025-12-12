@@ -3,7 +3,7 @@ from db.db import db
 from db.methods.genomes.queries import *
 from db.methods.sources.queries import *
 
-def validate_configuration_data(organism_id, assembly_id, nomenclature, source_id, sv_id):
+def validate_configuration_data(organism_id, assembly_id, nomenclature, source_id, sv_id, sequence_id, start_pos, end_pos):
     """
     Validate that all the foreign keys exist and are consistent
     """
@@ -41,6 +41,12 @@ def validate_configuration_data(organism_id, assembly_id, nomenclature, source_i
             return {
                 "success": False,
                 "message": f"Nomenclature '{nomenclature}' does not exist for assembly {assembly_id}"
+            }
+        
+        if not sequence_id_exists(sequence_id, assembly_id, start_pos, end_pos):
+            return {
+                "success": False,
+                "message": f"Sequence ID '{sequence_id}' with positions {start_pos}-{end_pos} does not exist for assembly {assembly_id}"
             }
         
         return {

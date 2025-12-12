@@ -5,7 +5,7 @@ import atexit
 import uuid
 from typing import Set, Optional, Dict
 from contextlib import contextmanager
-from config.paths import TEMP_FILES_DIR
+from db.db import get_temp_files_dir
 
 class TempFileManager:
     """
@@ -51,7 +51,7 @@ class TempFileManager:
         """
         # Generate random filename
         random_filename = f"temp_{uuid.uuid4().hex}"
-        temp_path = os.path.join(dir or TEMP_FILES_DIR, random_filename)
+        temp_path = os.path.join(dir or get_temp_files_dir(), random_filename)
         
         # Add to tracking
         with self._lock:

@@ -2,6 +2,19 @@ from sqlalchemy import text
 from db.db import db
 from db.methods.utils import *
 
+def get_database_config():
+    """
+    Returns the database configuration.
+    {
+        "data_dir": "path/to/data"
+    }
+    """
+    res = db.session.execute(text("SELECT data_dir FROM database_configuration;")).fetchone()
+    if not res or not res.data_dir:
+        return {"data_dir": None}
+
+    return {"data_dir": res.data_dir}
+
 def list_tables():
     """
     Returns a list of only actual tables (excluding views) in the database.

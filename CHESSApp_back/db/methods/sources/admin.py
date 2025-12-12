@@ -10,7 +10,7 @@ from db.methods.utils import *
 from db.methods.genomes.queries import *
 from db.methods.genomes.utils import *
 from db.methods.TX import TX
-from config.paths import SOURCE_FILES_DIR, TEMP_FILES_DIR
+from db.db import get_source_files_dir, get_temp_files_dir
 from db.methods.TempFileManager import get_temp_file_manager
 
 from .queries import *
@@ -315,7 +315,8 @@ def verify_annotation_file_upload_data(data) -> Dict:
         source_version_id = int(data["source_version_id"])
         assembly_id = int(data["assembly_id"])
         description = data["description"]
-        
+        skip_invalid_seqids = data.get("skipInvalidSeqids", False)
+
         if not source_version_exists_by_id(source_version_id):
             return {"success": False,"message": f"Source version with ID {source_version_id} does not exist"}
         
@@ -352,18 +353,22 @@ def verify_annotation_file_upload_data(data) -> Dict:
         db_seqids = organize_nomenclatures(db_seqids["data"])[assembly_id]
 
         # write output file skipping any sequence_ids not in the database
-        matching_nomenclatures = set()
+        matching_nomenclatures = dict()
         for nomenclature, sequence_name_mappings in db_seqids["sequence_name_mappings"].items():
-            if set(gtf_seqids) - set(sequence_name_mappings.keys()):
+            remaining_seqids = set(gtf_seqids) - set(sequence_name_mappings.keys())
+            if len(remaining_seqids) == len(set(gtf_seqids)):
                 continue
             else:
-                matching_nomenclatures.add(nomenclature)
+                matching_nomenclatures[nomenclature] = remaining_seqids
         
         if not matching_nomenclatures:
             return {
                 "success": False,
                 "message": f"No nomenclature found where all {len(gtf_seqids)} sequences from the file are present"
             }
+        
+        # convert into a list of tuples
+        matching_nomenclatures = [(nomenclature, list(missing_seqids)) for nomenclature, missing_seqids in matching_nomenclatures.items()]
         
         # next we need to process the attributes
         # these attributes will be sent back to the frontend to prompt user to resolve conflicts if exist
@@ -381,7 +386,7 @@ def verify_annotation_file_upload_data(data) -> Dict:
         return {
             "success": True,
             "status": "nomenclature_detection",
-            "detected_nomenclatures": list(matching_nomenclatures),
+            "detected_nomenclatures": matching_nomenclatures,
             "attributes": processed_attributes,
             "file_sequences": list(gtf_seqids),
             "assembly_id": assembly_id,
@@ -452,13 +457,26 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
         if not sva_id:
             return {"success": False,"message": "Failed to create entry in the source_version_assembly table"}
                 
+        # cleanup the norm_gtf_path gtf file by removing all entries with invalid seqids
+        db_nomenclature_data = get_nomenclature(assembly_id, selected_nomenclature)
+        db_nomenclature_seqids = [x["sequence_name"] for x in db_nomenclature_data["data"]]
+        
+        with open(norm_gtf_path, "r") as in_fp, temp_manager.managed_temp_file(name="cleaned_norm_gtf") as cleaned_norm_gtf_path:
+            with open(cleaned_norm_gtf_path, "w") as out_fp:
+                for line in in_fp:
+                    if line.startswith("#"):
+                        continue
+                    lcs = line.strip().split("\t")
+                    if lcs[0] in db_nomenclature_seqids:
+                        out_fp.write(line)
+
         # extract current GTF for the database
         with temp_manager.managed_temp_file(name='db_gtf') as db_gtf_fname:
             to_gtf(assembly_id,selected_nomenclature,db_gtf_fname)
 
         # run gffcompare between the database GTF and the normalized input file
         with temp_manager.managed_temp_file(name='gffcmp_gtf') as gffcmp_gtf_fname:
-            run_gffcompare(norm_gtf_path,db_gtf_fname,gffcmp_gtf_fname)
+            run_gffcompare(cleaned_norm_gtf_path,db_gtf_fname,gffcmp_gtf_fname)
 
         tracking = load_tracking(gffcmp_gtf_fname+".tracking")
 
@@ -469,7 +487,7 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
         # iterate over the contents of the file and add them to the database
         # construct gene_id to Gene.gid map, add every new gene as an entry into Gene Table
         gene_map = dict()
-        for transcript_lines in read_gffread_gtf(norm_gtf_path):
+        for transcript_lines in read_gffread_gtf(cleaned_norm_gtf_path):
             transcript = TX()
             transcript.gene_name_key = gene_name_key
             transcript.gene_type_key = gene_type_key
@@ -542,7 +560,7 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
 
         for target_nomenclature in db_seqids["nomenclatures"]:
             source_file_base_name = f"{sva_id}_{target_nomenclature}"
-            source_file_base_name = os.path.join(SOURCE_FILES_DIR, source_file_base_name)
+            source_file_base_name = os.path.join(get_source_files_dir(), source_file_base_name)
 
             nomenclature_map = {}
             for source_seqname, seqid in db_seqids["sequence_name_mappings"][selected_nomenclature].items():
@@ -550,7 +568,7 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
             
             try:
                 with temp_manager.managed_temp_file(name=f"{sva_id}_{target_nomenclature}.gtf") as temp_new_nomenclature_gtf_file:
-                    convert_gtf_nomenclature(norm_gtf_path,temp_new_nomenclature_gtf_file,nomenclature_map)
+                    convert_gtf_nomenclature(cleaned_norm_gtf_path,temp_new_nomenclature_gtf_file,nomenclature_map)
                     source_files = prepare_source_files_from_gtf(temp_new_nomenclature_gtf_file,source_file_base_name)
                 
                 for source_file, source_file_data in source_files.items():

@@ -28,6 +28,29 @@ def nomenclature_exists(nomenclature: str, assembly_id: int):
         return result[0] > 0
     except Exception as e:
         return False
+    
+def sequence_id_exists(sequence_id: str, assembly_id: int, start:None, end:None):
+    # validate that the sequence ID exists in the assembly
+    # and optionally that the start and end positions are valid
+    try:
+        result = db.session.execute(text("""
+            SELECT length FROM sequence_id WHERE sequence_id = :sequence_id AND assembly_id = :assembly_id
+        """), {"sequence_id": sequence_id, "assembly_id": assembly_id}).fetchone()
+        
+        if not result or len(result) == 0:
+            return False
+        
+        seq_length = result[0]
+        if start is not None and (start < 1 or start > seq_length):
+            return False
+        if end is not None and (end < 1 or end > seq_length):
+            return False
+        if start is not None and end is not None and start > end:
+            return False
+        return True
+    
+    except Exception as e:
+        return False
 
 def get_assembly(assembly_id: int):
     try:
@@ -150,6 +173,68 @@ def get_nomenclatures(assembly_id: int = None):
             data[row.assembly_id].append(row_dict)
 
         return {"success": True, "data": data}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+    
+def get_nomenclature(assembly_id: int, nomenclature: str):
+    """
+    Get all sequence ID mappings for a specific assembly and nomenclature.
+    Returns: [row_dict, ...]
+    """
+    try:
+        result = db.session.execute(text("""
+            SELECT sim.sequence_id, 
+                   sim.sequence_name, 
+                   si.length 
+            FROM sequence_id_map sim 
+            LEFT JOIN sequence_id si 
+                ON sim.assembly_id = si.assembly_id AND sim.sequence_id = si.sequence_id
+            WHERE sim.assembly_id = :assembly_id 
+              AND sim.nomenclature = :nomenclature
+            ORDER BY sim.sequence_name
+        """), {
+            "assembly_id": assembly_id,
+            "nomenclature": nomenclature
+        }).fetchall()
+
+        data = []
+        for row in result:
+            row_dict = {
+                "sequence_id": row.sequence_id,
+                "sequence_name": row.sequence_name,
+                "length": row.length
+            }
+            data.append(row_dict)
+
+        return {"success": True, "data": data}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+def get_map_between_nomenclatures(assembly_id: int, from_nomenclature: str, to_nomenclature: str):
+    """
+    Get mapping between two nomenclatures for a specific assembly.
+    Returns: {from_sequence_name: to_sequence_name, ...}
+    """
+    try:
+        result = db.session.execute(text("""
+            SELECT sim_from.sequence_name AS from_sequence_name,
+                   sim_to.sequence_name AS to_sequence_name
+            FROM sequence_id_map sim_from
+            JOIN sequence_id_map sim_to
+              ON sim_from.assembly_id = sim_to.assembly_id
+             AND sim_from.sequence_id = sim_to.sequence_id
+            WHERE sim_from.assembly_id = :assembly_id
+              AND sim_from.nomenclature = :from_nomenclature
+              AND sim_to.nomenclature = :to_nomenclature
+        """), {
+            "assembly_id": assembly_id,
+            "from_nomenclature": from_nomenclature,
+            "to_nomenclature": to_nomenclature
+        }).fetchall()
+        mapping = {}
+        for row in result:
+            mapping[row.from_sequence_name] = row.to_sequence_name
+        return {"success": True, "data": mapping}
     except Exception as e:
         return {"success": False, "message": str(e)}
 

@@ -1,6 +1,5 @@
 # Config package initialization
 import os
-from .environments import config as env_config, BaseConfig, DevelopmentConfig, ProductionConfig
 
 class Config:
     """Legacy configuration class for backward compatibility"""
@@ -13,6 +12,8 @@ class Config:
     UPLOAD_TIMEOUT = 10800  # 3 hour timeout for uploads
     
     # Database settings for MySQL
+    CHESSDB_MYSQL_BASE = os.getenv("CHESSDB_MYSQL_BASE", "mysql")
+    CHESSDB_SOCKET= os.getenv("CHESSDB_SOCKET", "")
     CHESSDB_HOST = os.getenv("CHESSDB_HOST", "localhost")
     CHESSDB_NAME = os.getenv("CHESSDB_NAME", "CHESS_DB")
     CHESSDB_USER = os.getenv("CHESSDB_USER", "")
@@ -26,19 +27,6 @@ class Config:
 
     CORS_ORIGINS = ['http://localhost:5112', 'http://localhost:5113']
 
-config = Config()
-
-def get_config():
-    """Get configuration based on environment"""
-    env = os.getenv('FLASK_ENV', 'development')
-    return env_config.get(env, env_config['default'])
-
 __all__ = [
     'Config',
-    'get_config', 
-    'config',
-    'env_config',
-    'BaseConfig',
-    'DevelopmentConfig', 
-    'ProductionConfig',
 ] 

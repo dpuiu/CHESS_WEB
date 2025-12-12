@@ -22,6 +22,66 @@ admin_bp = Blueprint('admin', __name__)
 # DATABASE MANAGEMENT ROUTES
 # ============================================================================
 
+@admin_bp.route('/db_config', methods=['GET'])
+def db_config():
+    """
+    Returns the database configuration.
+    """
+    res = db_admin.get_database_config()
+    if res["data_dir"] is None:
+        return jsonify(res), 500
+    return jsonify({"success": True, "data": res["data_dir"]})
+
+@admin_bp.route('/set_db_config', methods=['POST'])
+def set_db_config():
+    """
+    Updates the database configuration.
+    """
+    res = db_admin.update_database_config(request.json)
+    if not res["success"]:
+        return jsonify(res), 500
+    return jsonify({"success": True, "data": res["data"]})
+
+@admin_bp.route('/create_backup', methods=['POST'])
+@require_json
+@validate_required_fields(['backup_path'])
+def create_backup():
+    """
+    Creates a backup of the database.
+    Request body should contain: {"backup_path": "/path/to/backup.sql"}
+    """
+    try:
+        data = request.get_json()
+        backup_path = data.get('backup_path')
+        
+        result = db_admin.create_backup(backup_path)
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to create backup: {str(e)}"}), 500
+
+@admin_bp.route('/restore_backup', methods=['POST'])
+@require_json
+@validate_required_fields(['backup_path'])
+def restore_backup():
+    """
+    Restores the database from a backup file.
+    Request body should contain: {"backup_path": "/path/to/backup.sql"}
+    """
+    try:
+        data = request.get_json()
+        backup_path = data.get('backup_path')
+        
+        result = db_admin.restore_backup(backup_path)
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to restore backup: {str(e)}"}), 500
+
 @admin_bp.route('/db_list', methods=['GET'])
 def db_list():
     """
@@ -390,7 +450,7 @@ def upload_nomenclature_tsv(assembly_id):
 
 @admin_bp.route('/configurations', methods=['POST'])
 @require_json
-@validate_required_fields(['description', 'organism_id', 'assembly_id', 'nomenclature', 'source_id', 'sv_id'])
+@validate_required_fields(['description', 'organism_id', 'assembly_id', 'nomenclature', 'source_id', 'sv_id', 'sequence_id', 'start', 'end'])
 def create_configuration():
     """
     Create a new configuration

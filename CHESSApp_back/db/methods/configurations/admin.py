@@ -16,6 +16,9 @@ def create_configuration(data):
             - source_id: ID of the source
             - sv_id: ID of the source version
             - set_active: Whether to set this configuration as active
+            - sequence_id: ID of the sequence
+            - start: Start position
+            - end: End position
     
     Returns:
         Dictionary with success status and configuration_id
@@ -27,7 +30,10 @@ def create_configuration(data):
             data['assembly_id'],
             data['nomenclature'],
             data['source_id'],
-            data['sv_id']
+            data['sv_id'],
+            data['sequence_id'],
+            data['start'],
+            data['end']
         )
         
         if not validation['valid']:
@@ -40,10 +46,10 @@ def create_configuration(data):
         query = text("""
             INSERT INTO configurations (
                 active, description, organism_id, assembly_id, 
-                nomenclature, source_id, sv_id
+                nomenclature, source_id, sv_id, sequence_id, start, end
             ) VALUES (
                 :active, :description, :organism_id, :assembly_id,
-                :nomenclature, :source_id, :sv_id
+                :nomenclature, :source_id, :sv_id, :sequence_id, :start, :end
             )
         """)
         
@@ -54,7 +60,10 @@ def create_configuration(data):
             'assembly_id': data['assembly_id'],
             'nomenclature': data['nomenclature'],
             'source_id': data['source_id'],
-            'sv_id': data['sv_id']
+            'sv_id': data['sv_id'],
+            'sequence_id': data['sequence_id'],
+            'start': data['start'],
+            'end': data['end']
         })
 
         configuration_id = result.lastrowid
@@ -116,7 +125,15 @@ def update_configuration(configuration_id, data):
         if 'set_active' in data:
             update_fields.append("active = :active")
             params['active'] = 'active' if data['set_active'] else None
-        
+        if 'sequence_id' in data:
+            update_fields.append("sequence_id = :sequence_id")
+            params['sequence_id'] = data['sequence_id']
+        if 'start' in data:
+            update_fields.append("start = :start")
+            params['start'] = data['start']
+        if 'end' in data:
+            update_fields.append("end = :end")
+            params['end'] = data['end']
         
         if not update_fields:
             return {
@@ -125,13 +142,16 @@ def update_configuration(configuration_id, data):
             }
         
         # If updating foreign keys, validate the new data
-        if any(key in data for key in ['organism_id', 'assembly_id', 'nomenclature', 'source_id', 'sv_id']):
+        if any(key in data for key in ['organism_id', 'assembly_id', 'nomenclature', 'source_id', 'sv_id', 'sequence_id', 'start', 'end']):
             validation = validate_configuration_data(
                 data.get('organism_id', existing_config['organism_id']),
                 data.get('assembly_id', existing_config['assembly_id']),
                 data.get('nomenclature', existing_config['nomenclature']),
                 data.get('source_id', existing_config['source_id']),
-                data.get('sv_id', existing_config['sv_id'])
+                data.get('sv_id', existing_config['sv_id']),
+                data.get('sequence_id', existing_config['sequence_id']),
+                data.get('start', existing_config['start']),
+                data.get('end', existing_config['end'])
             )
             
             if not validation['valid']:

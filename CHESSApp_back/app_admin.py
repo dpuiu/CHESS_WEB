@@ -1,7 +1,5 @@
 from flask import Flask, render_template
-from routes.admin_routes import admin_bp
-from routes.public_routes import public_bp
-from db.db import db
+from db.db import db, initialize_paths
 from config import Config
 from middleware import setup_cors
 
@@ -16,6 +14,14 @@ app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
 app.config['UPLOAD_TIMEOUT'] = Config.UPLOAD_TIMEOUT
 
 db.init_app(app)
+
+# Initialize data directory paths from database configuration
+with app.app_context():
+    initialize_paths()
+
+# Now import routes after paths are initialized
+from routes.admin_routes import admin_bp
+from routes.public_routes import public_bp
 
 # Register only admin routes (full access)
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
