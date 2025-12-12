@@ -42,6 +42,7 @@ export const DatasetsTable: React.FC<DatasetsTableProps> = ({
           <th>Name</th>
           <th>Description</th>
           <th>Data Type</th>
+          <th>Data Target</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -57,6 +58,13 @@ export const DatasetsTable: React.FC<DatasetsTableProps> = ({
               </div>
             </td>
             <td>{dataset.data_type}</td>
+            <td>
+              <Badge 
+                bg={dataset.data_target === 'genes' ? 'success' : 'info'}
+              >
+                {dataset.data_target === 'genes' ? 'Genes' : 'Transcripts'}
+              </Badge>
+            </td>
             <td>
               <div className="btn-group" role="group">
                 <Button

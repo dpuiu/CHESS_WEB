@@ -17,12 +17,16 @@ const Dashboard: React.FC = () => {
   const { sources, assemblies, organisms, configurations, datasets, loading, error } = useSelector(
     (state: RootState) => state.globalData
   );
+  const { data_dir, loading: databaseConfigLoading, error: databaseConfigError } = useSelector(
+    (state: RootState) => state.databaseConfig
+  );
   const navigate = useNavigate();
 
   const navigateToSection = (section: string) => {
     navigate(`/${section}`);
   };
 
+  const isDatabaseConfigured = data_dir && data_dir.trim() !== '';
   const hasData = sources && assemblies && organisms && configurations && datasets;
   const stats = hasData ? {
     organisms: Object.keys(organisms).length,
@@ -41,7 +45,7 @@ const Dashboard: React.FC = () => {
   ];
 
   const renderStats = () => {
-    if (loading) {
+    if (loading || databaseConfigLoading) {
       return (
         <div className="text-center">
           <Spinner animation="border" role="status">
@@ -51,10 +55,22 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    if (error) {
+    if (error || databaseConfigError) {
       return (
         <Alert variant="danger">
-          Error loading data: {error}
+          Error loading data: {error || databaseConfigError}
+        </Alert>
+      );
+    }
+
+    if (!isDatabaseConfigured) {
+      return (
+        <Alert variant="warning">
+          <i className="fas fa-exclamation-triangle me-2" />
+          <strong>Database Configuration Required</strong>
+          <br />
+          Please configure the database settings before accessing the dashboard. 
+          Go to <a href="/database" className="alert-link">Database Management</a> to set up the data directory.
         </Alert>
       );
     }
@@ -69,10 +85,16 @@ const Dashboard: React.FC = () => {
 
     return (
       <Row>
+        <StatsCard 
+          count={isDatabaseConfigured ? 1 : 0} 
+          label="Database Config" 
+          variant={isDatabaseConfigured ? "success" : "danger"}
+          icon="fas fa-cog"
+        />
         <StatsCard count={stats!.organisms} label="Organisms" variant="primary" />
         <StatsCard count={stats!.assemblies} label="Assemblies" variant="success" />
         <StatsCard count={stats!.sources} label="Sources" variant="secondary" />
-        <StatsCard count={stats!.configurations} label="Configurations" variant="secondary" />
+        <StatsCard count={stats!.configurations} label="Configurations" variant="info" />
       </Row>
     );
   };
@@ -89,6 +111,7 @@ const Dashboard: React.FC = () => {
               </h5>
             </Card.Header>
             <Card.Body>
+              {databaseConfigLoading && <div>Loading...</div>}
               {renderStats()}
             </Card.Body>
           </Card>
@@ -105,18 +128,25 @@ const Dashboard: React.FC = () => {
               </h5>
             </Card.Header>
             <Card.Body>
-              <Row>
-                {actions.map((action) => (
-                  <QuickActionButton
-                    key={action.section}
-                    icon={action.icon}
-                    label={action.label}
-                    section={action.section}
-                    variant={action.variant}
-                    onClick={navigateToSection}
-                  />
-                ))}
-              </Row>
+              {!isDatabaseConfigured ? (
+                <Alert variant="info" className="mb-0">
+                  <i className="fas fa-info-circle me-2" />
+                  Please configure the database settings to access management features.
+                </Alert>
+              ) : (
+                <Row>
+                  {actions.map((action) => (
+                    <QuickActionButton
+                      key={action.section}
+                      icon={action.icon}
+                      label={action.label}
+                      section={action.section}
+                      variant={action.variant}
+                      onClick={navigateToSection}
+                    />
+                  ))}
+                </Row>
+              )}
             </Card.Body>
           </Card>
         </Col>

@@ -4,25 +4,32 @@ import { Container, Row, Col, Alert } from 'react-bootstrap';
 import { AppDispatch, RootState } from '../redux/store';
 import { 
   fetchDatabaseList, 
-  fetchTableData, 
+  fetchTableData,
   resetDatabase, 
-  clearTable 
+  clearTable,
+  createBackup,
+  restoreBackup
 } from '../redux/adminData/adminDataThunks';
 import { clearGlobalData } from '../redux/globalData/globalDataSlice';
 import { DatabaseListResponse, DatabaseTableDataResponse } from '../redux/adminData/adminDataSlice';
 import { 
+  DatabaseRequiredSettings,
   DatabaseHeader, 
   DatabaseOverview, 
-  DatabaseConfirmationModal 
+  DatabaseConfirmationModal,
+  DatabaseBackupRestoreModal,
+  DatabaseCreateBackupModal
 } from '../components/databaseManager';
 import './DatabaseManagement.css';
 
 const DatabaseManagement: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.adminData);
+  const { loading } = useSelector((state: RootState) => state.adminData);
   
   const [showResetModal, setShowResetModal] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [clearTableName, setClearTableName] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'danger'>('success');
@@ -41,7 +48,7 @@ const DatabaseManagement: React.FC = () => {
 
   useEffect(() => {
     loadDatabaseList();
-  }, []);
+  }, [dispatch]);
 
   const loadDatabaseList = async () => {
     setDbLoading(true);
@@ -86,6 +93,14 @@ const DatabaseManagement: React.FC = () => {
 
   const handleResetClick = () => {
     setShowResetModal(true);
+  };
+
+  const handleBackupClick = () => {
+    setShowBackupModal(true);
+  };
+
+  const handleRestoreClick = () => {
+    setShowRestoreModal(true);
   };
 
   const handleResetConfirm = async () => {
@@ -178,6 +193,52 @@ const DatabaseManagement: React.FC = () => {
     setShowClearModal(false);
   };
 
+  const handleBackupConfirm = async (backupPath: string) => {
+    setShowBackupModal(false);
+    setMessage(null);
+    
+    try {
+      const result = await dispatch(createBackup(backupPath)).unwrap();
+      setMessage(result.message || 'Database backup created successfully.');
+      setMessageType('success');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to create database backup.');
+      setMessageType('danger');
+    }
+  };
+
+  const handleBackupCancel = () => {
+    setShowBackupModal(false);
+  };
+
+  const handleRestoreConfirm = async (backupPath: string) => {
+    setShowRestoreModal(false);
+    setMessage(null);
+    
+    try {
+      const result = await dispatch(restoreBackup(backupPath)).unwrap();
+      setMessage(result.message || 'Database restored successfully from backup.');
+      setMessageType('success');
+      // Refresh database list after restore
+      await loadDatabaseList();
+      // Trigger global data reload
+      dispatch(clearGlobalData());
+      // Clear all table data
+      setTableData({});
+      Object.keys(expanded).forEach(tableName => {
+        setExpanded(prev => ({ ...prev, [tableName]: false }));
+      });
+      setSearchTerms({});
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to restore database from backup.');
+      setMessageType('danger');
+    }
+  };
+
+  const handleRestoreCancel = () => {
+    setShowRestoreModal(false);
+  };
+
 
 
   return (
@@ -186,6 +247,8 @@ const DatabaseManagement: React.FC = () => {
         <Col>
           <DatabaseHeader 
             onResetDatabase={handleResetClick}
+            onBackupDatabase={handleBackupClick}
+            onRestoreDatabase={handleRestoreClick}
             loading={loading}
           />
           
@@ -194,6 +257,12 @@ const DatabaseManagement: React.FC = () => {
               {message}
             </Alert>
           )}
+
+          <div>
+            <DatabaseRequiredSettings
+              loading={loading}
+            />
+          </div>
 
           <DatabaseOverview
             databaseList={databaseList}
@@ -220,6 +289,21 @@ const DatabaseManagement: React.FC = () => {
         onClearConfirm={handleClearConfirm}
         onResetCancel={handleResetCancel}
         onClearCancel={handleClearCancel}
+      />
+
+      <DatabaseBackupRestoreModal
+        showRestoreModal={showRestoreModal}
+        loading={loading}
+        onRestoreConfirm={handleRestoreConfirm}
+        onRestoreCancel={handleRestoreCancel}
+      />
+
+      <DatabaseCreateBackupModal
+        showCreateBackupModal={showBackupModal}
+        initialBackupDirPath={null}
+        loading={loading}
+        onCreateBackupConfirm={handleBackupConfirm}
+        onCreateBackupCancel={handleBackupCancel}
       />
     </Container>
   );

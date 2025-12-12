@@ -102,7 +102,18 @@ const SourceVersionFileUploadForm: React.FC<SourceVersionFileUploadFormProps> = 
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    
+    // Handle checkbox input
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked,
+      }));
+      return;
+    }
+
     setFormData(prev => {
       // If organism changes, reset assembly selection
       if (name === 'organism_id') {

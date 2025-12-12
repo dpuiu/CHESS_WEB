@@ -3,7 +3,7 @@ import { AttributeInfo, AttributeMapping } from '../../types/file';
 
 interface SourceVersionFileUploadConfirmationModalProps {
   isOpen: boolean;
-  detectedNomenclatures: string[];
+  detectedNomenclatures: [string, string[]][]; // [nomenclature_name, missing_seqids[]]
   attributes: Record<string, AttributeInfo>;
   fileSequences: string[];
   onConfirm: (selectedNomenclature: string, attributeMapping: AttributeMapping) => void;
@@ -29,14 +29,9 @@ const SourceVersionFileUploadConfirmationModal: React.FC<SourceVersionFileUpload
   const [confirming, setConfirming] = useState(false);
   const [activeTab, setActiveTab] = useState<'nomenclature' | 'attributes'>('nomenclature');
 
-  // Auto-select if only one option
-  React.useEffect(() => {
-    if (detectedNomenclatures.length === 1) {
-      setSelectedNomenclature(detectedNomenclatures[0]);
-    } else {
-      setSelectedNomenclature('');
-    }
-  }, [detectedNomenclatures]);
+  // Get missing sequences for the selected nomenclature
+  const selectedNomenclatureData = detectedNomenclatures.find(([name]) => name === selectedNomenclature);
+  const missingSequences = selectedNomenclatureData ? selectedNomenclatureData[1] : [];
 
   // Initialize attribute types and excluded attributes
   React.useEffect(() => {
@@ -228,7 +223,7 @@ const SourceVersionFileUploadConfirmationModal: React.FC<SourceVersionFileUpload
                 <div className="alert alert-info">
                   <i className="fas fa-info-circle me-2"></i>
                   <strong>File Analysis Complete:</strong> We found {detectedNomenclatures.length} nomenclature(s) 
-                  that match all {fileSequences.length} sequences in your file.
+                  that can be used with your file containing {fileSequences.length} sequences.
                 </div>
 
                 <div className="mb-3">
@@ -236,32 +231,50 @@ const SourceVersionFileUploadConfirmationModal: React.FC<SourceVersionFileUpload
                     <i className="fas fa-tag me-2"></i>
                     Select Nomenclature *
                   </label>
-                  {detectedNomenclatures.length === 1 ? (
-                    <div className="alert alert-success">
-                      <i className="fas fa-check me-2"></i>
-                      <strong>Auto-selected:</strong> {detectedNomenclatures[0]}
-                      <br />
-                      <small className="text-muted">Only one matching nomenclature found</small>
-                    </div>
-                  ) : (
-                    <select
-                      className="form-select"
-                      value={selectedNomenclature}
-                      onChange={(e) => setSelectedNomenclature(e.target.value)}
-                      disabled={confirming}
-                    >
-                      <option value="">Choose a nomenclature...</option>
-                      {detectedNomenclatures.map((nomenclature) => (
-                        <option key={nomenclature} value={nomenclature}>
-                          {nomenclature}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                  <select
+                    className="form-select"
+                    value={selectedNomenclature}
+                    onChange={(e) => setSelectedNomenclature(e.target.value)}
+                    disabled={confirming}
+                  >
+                    <option value="">Choose a nomenclature...</option>
+                    {detectedNomenclatures.map(([nomenclature, missingSeqs]) => (
+                      <option key={nomenclature} value={nomenclature}>
+                        {nomenclature} {missingSeqs.length > 0 ? `(${missingSeqs.length} missing sequences)` : '(all sequences matched)'}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="alert alert-warning">
-                  <i className="fas fa-exclamation-triangle me-2"></i>
+                {/* Warning for missing sequences */}
+                {selectedNomenclature && missingSequences.length > 0 && (
+                  <div className="alert alert-warning">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> {missingSequences.length} sequence identifier(s) from your file are not in the database for this nomenclature.
+                    Features on these sequences will <strong>not</strong> be processed.
+                    <details className="mt-2">
+                      <summary className="text-muted" style={{ cursor: 'pointer' }}>
+                        <small>Click to view missing sequences</small>
+                      </summary>
+                      <div className="mt-2" style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                        <code className="small">
+                          {missingSequences.join(', ')}
+                        </code>
+                      </div>
+                    </details>
+                  </div>
+                )}
+
+                {/* Success message if all sequences matched */}
+                {selectedNomenclature && missingSequences.length === 0 && (
+                  <div className="alert alert-success">
+                    <i className="fas fa-check-circle me-2"></i>
+                    <strong>All sequences matched:</strong> All {fileSequences.length} sequences in your file are present in the database for this nomenclature.
+                  </div>
+                )}
+
+                <div className="alert alert-secondary">
+                  <i className="fas fa-arrow-right me-2"></i>
                   <strong>Next Step:</strong> After selecting a nomenclature, you'll need to configure how the file attributes map to our system.
                 </div>
               </div>

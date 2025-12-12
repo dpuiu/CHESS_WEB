@@ -13,13 +13,18 @@ interface ConfigurationFormModalProps {
   loading?: boolean;
 }
 
-interface OptionData {
-  organisms: Array<{ taxonomy_id: number; scientific_name: string; common_name: string }>;
-  assemblies: Array<{ assembly_id: number; assembly_name: string }>;
-  nomenclatures: string[];
-  sources: Array<{ source_id: number; name: string }>;
-  versions: Array<{ sv_id: number; version_name: string }>;
-}
+const initialFormState = {
+  description: '',
+  organism_id: '',
+  assembly_id: '',
+  nomenclature: '',
+  sequence_id: '',
+  start: '',
+  end: '',
+  source_id: '',
+  sv_id: '',
+  set_active: false
+};
 
 const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
   show,
@@ -30,267 +35,175 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
   loading = false
 }) => {
   const { organisms, assemblies, sources } = useSelector((state: RootState) => state.globalData);
-  
-  const [formData, setFormData] = useState({
-    description: '',
-    organism_id: '',
-    assembly_id: '',
-    nomenclature: '',
-    source_id: '',
-    sv_id: '',
-    set_active: false
-  });
-
-  const [options, setOptions] = useState<OptionData>({
-    organisms: [],
-    assemblies: [],
-    nomenclatures: [],
-    sources: [],
-    versions: [],
-  });
-
+  const [formData, setFormData] = useState(initialFormState);
   const [error, setError] = useState<string | null>(null);
 
-  // Load form data when editing and populate options from globalData
+  // Reset/populate form when modal opens
   useEffect(() => {
-    if (show) {
-      // Populate options from globalData
-      const organismsArray = organisms ? Object.values(organisms) : [];
-      
-      setOptions(prev => ({
-        ...prev,
-        organisms: organismsArray.map(org => ({
-          taxonomy_id: org.taxonomy_id,
-          scientific_name: org.scientific_name,
-          common_name: org.common_name
-        })),
-        sources: [] // Sources will be loaded when assembly is selected
-      }));
-
-      if (configuration && isEditing) {
-        setFormData({
-          description: configuration.description,
-          organism_id: configuration.organism_id.toString(),
-          assembly_id: configuration.assembly_id.toString(),
-          nomenclature: configuration.nomenclature,
-          source_id: configuration.source_id.toString(),
-          sv_id: configuration.sv_id.toString(),
-          set_active: configuration.active
-        });
-        
-        // Load dependent options for editing
-        if (configuration.organism_id) {
-          loadAssembliesFromGlobalData(configuration.organism_id);
-        }
-        if (configuration.assembly_id) {
-          loadNomenclaturesFromGlobalData(configuration.assembly_id);
-          loadSourcesForAssembly(configuration.assembly_id);
-        }
-        if (configuration.source_id) {
-          loadSourceVersionsFromGlobalData(configuration.source_id);
-        }
-      } else if (!isEditing) {
-        // Reset form for new configuration
-        setFormData({
-          description: '',
-          organism_id: '',
-          assembly_id: '',
-          nomenclature: '',
-          source_id: '',
-          sv_id: '',
-          set_active: false
-        });
-        setOptions(prev => ({
-          ...prev,
-          assemblies: [],
-          nomenclatures: [],
-          versions: []
-        }));
-      }
+    if (!show) return;
+    setError(null);
+    
+    if (isEditing && configuration) {
+      setFormData({
+        description: configuration.description,
+        organism_id: configuration.organism_id.toString(),
+        assembly_id: configuration.assembly_id.toString(),
+        nomenclature: configuration.nomenclature,
+        sequence_id: configuration.sequence_id || '',
+        start: configuration.start ? configuration.start.toString() : '',
+        end: configuration.end ? configuration.end.toString() : '',
+        source_id: configuration.source_id.toString(),
+        sv_id: configuration.sv_id.toString(),
+        set_active: configuration.active
+      });
+    } else {
+      setFormData(initialFormState);
     }
-  }, [show, configuration, isEditing, organisms, sources]);
+  }, [show, isEditing, configuration]);
 
-  // Helper functions to load data from globalData
-  const loadAssembliesFromGlobalData = (organismId: number) => {
-    const assembliesArray = assemblies ? Object.values(assemblies) : [];
-    const organismAssemblies = assembliesArray.filter(assembly => assembly.taxonomy_id === organismId);
-    
-    setOptions(prev => ({
-      ...prev,
-      assemblies: organismAssemblies.map(assembly => ({
-        assembly_id: assembly.assembly_id,
-        assembly_name: assembly.assembly_name
-      }))
-    }));
-  };
-
-  const loadNomenclaturesFromGlobalData = (assemblyId: number) => {
-    const assembliesArray = assemblies ? Object.values(assemblies) : [];
-    const assembly = assembliesArray.find(assembly => assembly.assembly_id === assemblyId);
-    
-    setOptions(prev => ({
-      ...prev,
-      nomenclatures: assembly?.nomenclatures || []
-    }));
-  };
-
-  const loadSourceVersionsFromGlobalData = (sourceId: number) => {
-    const sourcesArray = sources ? Object.values(sources) : [];
-    const source = sourcesArray.find(source => source.source_id === sourceId);
-    
-    if (source?.versions) {
-      const versionsArray = Object.values(source.versions);
-      setOptions(prev => ({
-        ...prev,
-        versions: versionsArray.map(version => ({
-          sv_id: version.sv_id,
-          version_name: version.version_name
+  // --- Derive options directly from globalData ---
+  const organismList = organisms ? Object.values(organisms) : [];
+  
+  const assemblyList = formData.organism_id && assemblies
+    ? Object.values(assemblies).filter(a => a.taxonomy_id === parseInt(formData.organism_id))
+    : [];
+  
+  const selectedAssembly = formData.assembly_id && assemblies
+    ? Object.values(assemblies).find(a => a.assembly_id === parseInt(formData.assembly_id))
+    : null;
+  
+  const nomenclatureList = selectedAssembly?.nomenclatures || [];
+  
+  // Sequences for the selected nomenclature
+  const sequenceList = (formData.nomenclature && selectedAssembly?.sequence_id_mappings)
+    ? Object.entries(selectedAssembly.sequence_id_mappings)
+        .filter(([, info]) => formData.nomenclature in info.nomenclatures)
+        .map(([db_seqid, info]) => ({ 
+          name: info.nomenclatures[formData.nomenclature], 
+          sequence_id: db_seqid, 
+          length: info.length 
         }))
-      }));
-    }
-  };
+    : [];
+  
+  // Get selected sequence's length for coordinate validation
+  const selectedSequence = sequenceList.find(s => s.sequence_id.toString() === formData.sequence_id);
+  const maxCoord = selectedSequence?.length || 0;
+  
+  // Sources that have files for the selected assembly
+  const sourceList = formData.assembly_id && sources
+    ? Object.values(sources).filter(source =>
+        source.versions && Object.values(source.versions).some(version =>
+          version.assemblies && Object.values(version.assemblies).some(
+            (sva: any) => sva.assembly_id === parseInt(formData.assembly_id)
+          )
+        )
+      )
+    : [];
+  
+  const selectedSource = formData.source_id && sources
+    ? Object.values(sources).find(s => s.source_id === parseInt(formData.source_id))
+    : null;
+  
+  const versionList = selectedSource?.versions ? Object.values(selectedSource.versions) : [];
 
-  const loadSourcesForAssembly = (assemblyId: number) => {
-    const sourcesArray = sources ? Object.values(sources) : [];
-    const validSources: Array<{ source_id: number; name: string }> = [];
-    
-    // Find sources that have source version assemblies on the selected assembly
-    for (const source of sourcesArray) {
-      if (source.versions) {
-        for (const version of Object.values(source.versions)) {
-          if (version.assemblies) {
-            // Check if any assembly in this version matches the selected assembly
-            const hasAssembly = Object.values(version.assemblies).some(
-              (assembly: any) => assembly.assembly_id === assemblyId
-            );
-            if (hasAssembly) {
-              validSources.push({
-                source_id: source.source_id,
-                name: source.name
-              });
-              break;
-            }
-          }
-        }
-      }
-    }
-    
-    setOptions(prev => ({
-      ...prev,
-      sources: validSources
-    }));
-  };
-
+  // --- Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
 
-    // Handle cascading dropdowns
-    if (name === 'organism_id' && value) {
-      loadAssembliesFromGlobalData(parseInt(value));
-      // Reset dependent fields
-      setFormData(prev => ({
-        ...prev,
-        assembly_id: '',
-        nomenclature: '',
-        source_id: '',
-        sv_id: ''
-      }));
-      setOptions(prev => ({
-        ...prev,
-        nomenclatures: [],
-        sources: [],
-        versions: []
-      }));
-    } else if (name === 'assembly_id' && value) {
-      loadNomenclaturesFromGlobalData(parseInt(value));
-      loadSourcesForAssembly(parseInt(value));
-      // Reset dependent fields
-      setFormData(prev => ({
-        ...prev,
-        nomenclature: '',
-        source_id: '',
-        sv_id: ''
-      }));
-      setOptions(prev => ({
-        ...prev,
-        versions: []
-      }));
-    } else if (name === 'source_id' && value) {
-      loadSourceVersionsFromGlobalData(parseInt(value));
-      // Reset dependent fields
-      setFormData(prev => ({
-        ...prev,
-        sv_id: ''
-      }));
-    }
+    setFormData(prev => {
+      const updated = { ...prev, [name]: newValue };
+      
+      // Reset downstream fields on cascading changes
+      if (name === 'organism_id') {
+        updated.assembly_id = '';
+        updated.nomenclature = '';
+        updated.sequence_id = '';
+        updated.start = '';
+        updated.end = '';
+        updated.source_id = '';
+        updated.sv_id = '';
+      } else if (name === 'assembly_id') {
+        updated.nomenclature = '';
+        updated.sequence_id = '';
+        updated.start = '';
+        updated.end = '';
+        updated.source_id = '';
+        updated.sv_id = '';
+      } else if (name === 'nomenclature') {
+        updated.sequence_id = '';
+        updated.start = '';
+        updated.end = '';
+      } else if (name === 'sequence_id') {
+        updated.start = '';
+        updated.end = '';
+      } else if (name === 'source_id') {
+        updated.sv_id = '';
+      }
+      
+      return updated;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.description.trim()) {
-      setError('Description is required');
-      return;
+      return setError('Description is required');
     }
-
     if (!formData.organism_id || !formData.assembly_id || !formData.nomenclature || 
+        !formData.sequence_id || !formData.start || !formData.end ||
         !formData.source_id || !formData.sv_id) {
-      setError('All fields are required');
-      return;
+      return setError('All fields are required');
+    }
+    
+    const start = parseInt(formData.start);
+    const end = parseInt(formData.end);
+    if (start > end) {
+      return setError('Start coordinate must be less than or equal to end coordinate');
     }
 
-    const configData: any = {
+    onSubmit({
       configuration_id: configuration?.configuration_id || 0,
-      set_active: formData.set_active,
+      active: formData.set_active,
       description: formData.description.trim(),
       organism_id: parseInt(formData.organism_id),
       assembly_id: parseInt(formData.assembly_id),
       nomenclature: formData.nomenclature,
+      sequence_id: formData.sequence_id,
+      start,
+      end,
       source_id: parseInt(formData.source_id),
       sv_id: parseInt(formData.sv_id)
-    };
-
-    onSubmit(configData);
+    } as Configuration);
   };
 
   const handleClose = () => {
-    setFormData({
-      description: '',
-      organism_id: '',
-      assembly_id: '',
-      nomenclature: '',
-      source_id: '',
-      sv_id: '',
-      set_active: false
-    });
+    setFormData(initialFormState);
     setError(null);
     onClose();
   };
+
+  const canSubmit = !loading && formData.description.trim() && 
+    formData.organism_id && formData.assembly_id && formData.nomenclature && 
+    formData.sequence_id && formData.start && formData.end &&
+    formData.source_id && formData.sv_id;
 
   return (
     <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
         <Modal.Title>
-          <i className="fas fa-cog me-2"></i>
+          <i className="fas fa-cog me-2" />
           {isEditing ? 'Edit Configuration' : 'Add New Configuration'}
         </Modal.Title>
       </Modal.Header>
+
       <Modal.Body>
         {error && (
           <Alert variant="danger" dismissible onClose={() => setError(null)}>
-            <i className="fas fa-exclamation-triangle me-2"></i>
             {error}
           </Alert>
         )}
-
-
 
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3">
@@ -302,10 +215,8 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               value={formData.description}
               onChange={handleChange}
               placeholder="Describe this configuration..."
-              required
               disabled={loading}
             />
-            <Form.Text>Provide a clear description of what this configuration represents</Form.Text>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -314,13 +225,12 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               name="organism_id"
               value={formData.organism_id}
               onChange={handleChange}
-              required
               disabled={loading}
             >
               <option value="">Select an organism...</option>
-              {options.organisms.map((organism) => (
-                <option key={organism.taxonomy_id} value={organism.taxonomy_id}>
-                  {organism.scientific_name} ({organism.common_name})
+              {organismList.map(org => (
+                <option key={org.taxonomy_id} value={org.taxonomy_id}>
+                  {org.scientific_name} ({org.common_name})
                 </option>
               ))}
             </Form.Select>
@@ -332,13 +242,12 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               name="assembly_id"
               value={formData.assembly_id}
               onChange={handleChange}
-              required
               disabled={loading || !formData.organism_id}
             >
-              <option value="">{formData.organism_id ? 'Select an assembly...' : 'Select an organism first...'}</option>
-              {options.assemblies.map((assembly) => (
-                <option key={assembly.assembly_id} value={assembly.assembly_id}>
-                  {assembly.assembly_name}
+              <option value="">{formData.organism_id ? 'Select an assembly...' : 'Select organism first...'}</option>
+              {assemblyList.map(asm => (
+                <option key={asm.assembly_id} value={asm.assembly_id}>
+                  {asm.assembly_name}
                 </option>
               ))}
             </Form.Select>
@@ -350,16 +259,67 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               name="nomenclature"
               value={formData.nomenclature}
               onChange={handleChange}
-              required
               disabled={loading || !formData.assembly_id}
             >
-              <option value="">{formData.assembly_id ? 'Select a nomenclature...' : 'Select an assembly first...'}</option>
-              {options.nomenclatures.map((nomenclature) => (
-                <option key={nomenclature} value={nomenclature}>
-                  {nomenclature}
+              <option value="">{formData.assembly_id ? 'Select nomenclature...' : 'Select assembly first...'}</option>
+              {nomenclatureList.map(nom => (
+                <option key={nom} value={nom}>{nom}</option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Sequence *</Form.Label>
+            <Form.Select
+              name="sequence_id"
+              value={formData.sequence_id}
+              onChange={handleChange}
+              disabled={loading || !formData.nomenclature}
+            >
+              <option value="">{formData.nomenclature ? 'Select sequence...' : 'Select nomenclature first...'}</option>
+              {sequenceList.map(seq => (
+                <option key={seq.sequence_id} value={seq.sequence_id}>
+                  {seq.name} ({seq.length.toLocaleString()} bp)
                 </option>
               ))}
             </Form.Select>
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Coordinates *</Form.Label>
+            <div className="d-flex gap-3">
+              <div className="flex-fill">
+                <Form.Control
+                  type="number"
+                  name="start"
+                  value={formData.start}
+                  onChange={handleChange}
+                  placeholder="Start"
+                  min={1}
+                  max={maxCoord || undefined}
+                  disabled={loading || !formData.sequence_id}
+                />
+                <Form.Text>Start (1-based)</Form.Text>
+              </div>
+              <div className="flex-fill">
+                <Form.Control
+                  type="number"
+                  name="end"
+                  value={formData.end}
+                  onChange={handleChange}
+                  placeholder="End"
+                  min={formData.start ? parseInt(formData.start) : 1}
+                  max={maxCoord || undefined}
+                  disabled={loading || !formData.sequence_id}
+                />
+                <Form.Text>End</Form.Text>
+              </div>
+            </div>
+            {selectedSequence && (
+              <Form.Text className="text-muted">
+                Sequence length: {selectedSequence.length.toLocaleString()} bp
+              </Form.Text>
+            )}
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -368,14 +328,11 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               name="source_id"
               value={formData.source_id}
               onChange={handleChange}
-              required
               disabled={loading || !formData.assembly_id}
             >
-              <option value="">{formData.assembly_id ? 'Select a source...' : 'Select an assembly first...'}</option>
-              {options.sources.map((source) => (
-                <option key={source.source_id} value={source.source_id}>
-                  {source.name}
-                </option>
+              <option value="">{formData.assembly_id ? 'Select source...' : 'Select assembly first...'}</option>
+              {sourceList.map(src => (
+                <option key={src.source_id} value={src.source_id}>{src.name}</option>
               ))}
             </Form.Select>
           </Form.Group>
@@ -386,14 +343,11 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               name="sv_id"
               value={formData.sv_id}
               onChange={handleChange}
-              required
               disabled={loading || !formData.source_id}
             >
-              <option value="">{formData.source_id ? 'Select a version...' : 'Select a source first...'}</option>
-              {options.versions.map((version) => (
-                <option key={version.sv_id} value={version.sv_id}>
-                  {version.version_name}
-                </option>
+              <option value="">{formData.source_id ? 'Select version...' : 'Select source first...'}</option>
+              {versionList.map(ver => (
+                <option key={ver.sv_id} value={ver.sv_id}>{ver.version_name}</option>
               ))}
             </Form.Select>
           </Form.Group>
@@ -408,29 +362,21 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               disabled={loading}
             />
             <Form.Text className="text-muted">
-              Only one configuration can be active at a time. Setting this as active will deactivate any other active configuration.
+              Only one configuration can be active at a time.
             </Form.Text>
           </Form.Group>
         </Form>
       </Modal.Body>
+
       <Modal.Footer>
         <Button variant="secondary" onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleSubmit} 
-          disabled={loading || !formData.description.trim() || 
-                   !formData.organism_id || !formData.assembly_id || !formData.nomenclature || 
-                   !formData.source_id || !formData.sv_id}
-        >
+        <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit}>
           {loading ? (
-            <>
-              <Spinner animation="border" size="sm" className="me-2" />
-              {isEditing ? 'Updating...' : 'Creating...'}
-            </>
+            <><Spinner animation="border" size="sm" className="me-2" />Saving...</>
           ) : (
-            `${isEditing ? 'Update' : 'Create'} Configuration`
+            isEditing ? 'Update' : 'Create'
           )}
         </Button>
       </Modal.Footer>
@@ -438,4 +384,4 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
   );
 };
 
-export default ConfigurationFormModal; 
+export default ConfigurationFormModal;

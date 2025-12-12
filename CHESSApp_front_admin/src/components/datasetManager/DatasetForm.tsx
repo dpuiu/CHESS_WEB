@@ -32,6 +32,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
     name: '',
     description: '',
     data_type: '',
+    data_target: 'transcripts' as 'transcripts' | 'genes',
     organism_id: '',
     assembly_id: '',
     source_id: '',
@@ -66,6 +67,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
           name: dataset.name,
           description: dataset.description,
           data_type: dataset.data_type,
+          data_target: dataset.data_target,
           organism_id: '',
           assembly_id: '',
           source_id: '',
@@ -77,6 +79,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
           name: '',
           description: '',
           data_type: '',
+          data_target: 'transcripts',
           organism_id: '',
           assembly_id: '',
           source_id: '',
@@ -119,6 +122,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
         name: formData.name,
         description: formData.description,
         data_type: formData.data_type,
+        data_target: formData.data_target,
         ...(formData.file && { file: formData.file }),
         sva_id
       };
@@ -325,6 +329,22 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
           </Form.Group>
 
           <Form.Group className="mb-3">
+            <Form.Label>Data Target *</Form.Label>
+            <Form.Select
+              value={formData.data_target}
+              onChange={(e) => handleInputChange('data_target', e.target.value as 'transcripts' | 'genes')}
+              required
+              disabled={loading}
+            >
+              <option value="transcripts">Transcripts</option>
+              <option value="genes">Genes</option>
+            </Form.Select>
+            <Form.Text className="text-muted">
+              Select whether the data is for transcripts or genes.
+            </Form.Text>
+          </Form.Group>
+
+          <Form.Group className="mb-3">
             <Form.Label>Organism *</Form.Label>
             <Form.Select
               value={formData.organism_id}
@@ -403,7 +423,8 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
               required
             />
             <Form.Text className="text-muted">
-              Upload a TSV file with columns: transcript_id, data
+              {formData.data_target === 'transcripts' && 'Upload a TSV file with columns: transcript_id, data'}
+              {formData.data_target === 'genes' && 'Upload a TSV file with columns: gene_id, data'}
             </Form.Text>
           </Form.Group>
         </Modal.Body>

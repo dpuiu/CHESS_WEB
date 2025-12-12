@@ -55,7 +55,7 @@ export interface AttributeInfo {
 
 // Nomenclature detection result
 export interface NomenclatureDetectionResult {
-  detected_nomenclatures: string[];
+  detected_nomenclatures: [string, string[]][];
   attributes: Record<string, AttributeInfo>;
   file_sequences: string[];
   temp_file_path: string;

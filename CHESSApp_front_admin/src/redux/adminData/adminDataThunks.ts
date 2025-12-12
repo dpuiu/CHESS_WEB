@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { Organism, Assembly, Source, SourceVersion, SourceFile, Configuration, Dataset } from '../../types/db_types';
+import { Organism, Assembly, Source, SourceVersion, SourceFile, Configuration, Dataset, DatabaseConfiguration } from '../../types/db_types';
 
 const API_BASE_URL = 'http://localhost:5001/api';
 
@@ -91,6 +91,58 @@ export const clearTable = createAsyncThunk(
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to clear table';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const createBackup = createAsyncThunk(
+  'adminData/createBackup',
+  async (backupPath: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/create_backup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ backup_path: backupPath }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        return rejectWithValue(result.message || 'Failed to create database backup');
+      }
+      
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create database backup';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const restoreBackup = createAsyncThunk(
+  'adminData/restoreBackup',
+  async (backupPath: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/restore_backup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ backup_path: backupPath }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        return rejectWithValue(result.message || 'Failed to restore database from backup');
+      }
+      
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to restore database from backup';
       return rejectWithValue(errorMessage);
     }
   }
@@ -708,6 +760,7 @@ export const removeSourceVersionFile = createAsyncThunk(
 export const createConfiguration = createAsyncThunk(
   'adminData/createConfiguration',
   async (configData: Configuration, { rejectWithValue }) => {
+    console.log('Creating configuration with data:', configData);
     try {
       const response = await fetch(`${API_BASE_URL}/admin/configurations`, {
         method: 'POST',
@@ -813,6 +866,7 @@ export const createDataset = createAsyncThunk(
       formData.append('name', datasetData.name!);
       formData.append('description', datasetData.description!);
       formData.append('data_type', datasetData.data_type!);
+      formData.append('data_target', datasetData.data_target!);
       
       if (datasetData.sva_id) {
         formData.append('sva_id', datasetData.sva_id.toString());

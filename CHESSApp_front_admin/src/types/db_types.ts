@@ -81,6 +81,9 @@ export interface Configuration {
   nomenclature: string;
   source_id: number;
   sv_id: number;
+  sequence_id: string;
+  start: number;
+  end: number;
 }
 
 // Data type management types
@@ -95,6 +98,12 @@ export interface Dataset {
   name: string;
   description: string;
   data_type: string;
+  data_target: 'transcripts' | 'genes';
+}
+
+// Database configuration types
+export interface DatabaseConfiguration {
+  data_dir: string;
 }
 
 export interface TranscriptData {
@@ -102,6 +111,14 @@ export interface TranscriptData {
   tid: number;
   sva_id: number;
   transcript_id: string;
+  dataset_id: number;
+  data: string;
+}
+
+export interface GeneData {
+  gd_id: number;
+  gid: number;
+  sva_id: number;
   dataset_id: number;
   data: string;
 }

@@ -141,7 +141,7 @@ const DatasetsManagement: React.FC = () => {
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h2 className="datasets-title">Datasets Management</h2>
-                <p className="datasets-subtitle">Manage transcript datasets and upload data</p>
+                <p className="datasets-subtitle">Manage transcript and gene datasets and upload data</p>
               </div>
             </div>
           </div>
