@@ -18,7 +18,7 @@ export const initializeAppSelections = createAsyncThunk<
       const selections = parseUrlToSelections(urlParams, { organisms, assemblies, sources });
       
       // Validate selections and throw error if invalid
-      if (!validateSelections(selections, { organisms, assemblies, sources })) {
+      if (!validateSelections(selections, state.dbData)) {
         throw new Error('Invalid configuration parameters');
       }
       

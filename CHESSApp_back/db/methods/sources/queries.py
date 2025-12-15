@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from db.db import db
+from db.db import db, to_absolute_path
 from db.methods.utils import *
 
 def source_exists_by_name(source_name):
@@ -127,7 +127,7 @@ def get_all_source_versions():
                 "common_name": row.common_name,
                 "organism_information": row.organism_information,
                 # File information
-                "file_path": row.file_path,
+                "file_path": to_absolute_path(row.file_path) if row.file_path else None,
                 "filetype": row.filetype,
                 "nomenclature": row.nomenclature,
                 "file_description": row.file_description,
@@ -172,7 +172,7 @@ def get_latest_source_versions():
                 "common_name": row.common_name,
                 "organism_information": row.organism_information,
                 # File information
-                "file_path": row.file_path,
+                "file_path": to_absolute_path(row.file_path) if row.file_path else None,
                 "filetype": row.filetype,
                 "nomenclature": row.nomenclature,
                 "file_description": row.file_description
@@ -205,7 +205,8 @@ def get_source_file_by_extension(sva_id, nomenclature, file_type):
         if not result:
             raise Exception(f"No file found for sva_id {sva_id} with nomenclature '{nomenclature}' and file type '{file_type}'")
         
-        file_path = result.file_path
+        # Resolve relative path from DB to absolute path
+        file_path = to_absolute_path(result.file_path)
         assembly_name = result.assembly_name
         source_name = result.name
         version_name = result.version_name

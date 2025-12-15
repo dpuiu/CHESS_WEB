@@ -61,3 +61,60 @@ def get_source_files_dir():
 def get_temp_files_dir():
     """Get the temp files directory."""
     return TEMP_FILES_DIR
+
+def get_data_base_dir():
+    """Get the base data directory."""
+    return DATA_BASE_DIR
+
+# ============================================================================
+# PATH CONVERSION UTILITIES
+# ============================================================================
+# These functions handle conversion between relative paths (stored in DB)
+# and absolute paths (used for file operations). This makes backups portable
+# since only the data_dir in database_configuration needs to be updated.
+
+def to_relative_path(absolute_path: str) -> str:
+    """
+    Convert an absolute file path to a relative path for database storage.
+    
+    Args:
+        absolute_path: Full absolute path to the file
+    
+    Returns:
+        Relative path from the data base directory (e.g., 'fasta_files/file.fasta')
+    """
+    if DATA_BASE_DIR is None:
+        raise RuntimeError("Data paths not initialized. Call initialize_paths() first.")
+    
+    # Normalize paths for comparison
+    abs_path = os.path.normpath(absolute_path)
+    base_dir = os.path.normpath(DATA_BASE_DIR)
+    
+    # Check if the path is under our data directory
+    if abs_path.startswith(base_dir):
+        # Return path relative to DATA_BASE_DIR
+        rel_path = os.path.relpath(abs_path, base_dir)
+        return rel_path
+    
+    # If path is not under data directory, just return the filename
+    # and let the caller handle placement
+    return os.path.basename(absolute_path)
+
+def to_absolute_path(relative_path: str) -> str:
+    """
+    Convert a relative file path (from DB) to an absolute path for file operations.
+    
+    Args:
+        relative_path: Relative path stored in database (e.g., 'fasta_files/file.fasta')
+
+    Returns:
+        Full absolute path to the file
+    """
+    if DATA_BASE_DIR is None:
+        raise RuntimeError("Data paths not initialized. Call initialize_paths() first.")
+    
+    # If already absolute, return as-is (for backward compatibility during migration)
+    if os.path.isabs(relative_path):
+        return relative_path
+    
+    return os.path.join(DATA_BASE_DIR, relative_path)

@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 from routes.public_routes import public_bp
-from db.db import db
+from db.db import db, initialize_paths
 from config import Config
 from middleware import setup_cors
 
@@ -11,6 +11,10 @@ app.config.from_object(Config)
 setup_cors(app, app_type='public')
 
 db.init_app(app)
+
+# Initialize data directory paths from database configuration
+with app.app_context():
+    initialize_paths()
 
 # Register only public routes (read-only)
 app.register_blueprint(public_bp, url_prefix='/api/public')

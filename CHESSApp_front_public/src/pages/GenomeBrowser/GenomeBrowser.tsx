@@ -4,7 +4,6 @@ import { useDbData, useAppData } from '../../hooks';
 import { useParams } from 'react-router-dom';
 import { JBrowseLinearGenomeView } from '@jbrowse/react-linear-genome-view';
 import { createViewState } from '@jbrowse/react-linear-genome-view';
-import { hydrateRoot, createRoot } from 'react-dom/client';
 import TrackManager from './utils/TrackManager';
 import { TrackConfig } from './utils/tracks';
 import { getAssembly, type BrowserAssemblyProps } from './utils/assembly';
@@ -164,23 +163,11 @@ const GenomeBrowser: React.FC = () => {
         configuration: {
           theme: {
             palette: {
-              primary: {
-                main: '#1976d2',
-              },
-              secondary: {
-                main: '#dc004e',
-              },
+              primary: { main: '#1976d2' },
+              secondary: { main: '#dc004e' },
             },
           },
         },
-        makeWorkerInstance: () => {
-          return new Worker(
-            new URL('@jbrowse/plugin-linear-genome-view/dist/LinearGenomeView.worker.js', import.meta.url),
-            { type: 'module' }
-          );
-        },
-        hydrateFn: hydrateRoot,
-        createRootFn: createRoot,
       });
 
       setViewState(state);

@@ -7,15 +7,14 @@ import time
 import shutil
 import subprocess
 
-def update_database_config(config):
+def update_database_config(data_dir):
     """
     Updates the database configuration and refreshes the global paths.
     """
     try:
-        # prompt user to delete data directory if exists
-        data_dir = config["data_dir"]
+        # delete existing data directory if changing
         if os.path.exists(data_dir):
-            return {"success": False, "message": "Data directory already exists"}
+            shutil.rmtree(data_dir)
 
         # Update database configuration
         if db.session.execute(text("SELECT COUNT(*) FROM database_configuration")).fetchone()[0] == 0:
@@ -58,7 +57,7 @@ def update_database_config(config):
         # Refresh the global data directory configuration
         initialize_paths()
         
-        return {"success": True, "data": config}
+        return {"success": True, "data": data_dir}
     except Exception as e:
         db.session.rollback()
         return {"success": False, "message": str(e)}
@@ -135,11 +134,11 @@ def create_backup(backup_path):
     except Exception as e:
         return {"success": False, "message": str(e)}
 
-def restore_backup(backup_path):
+def restore_backup(backup_path, storage_dir_path):
     """
     Restores the database from a backup file.
-    Uses mysql client from the configured MySQL base path.
-    Returns a dict with the status of the operation.
+    The restoration files are written in the currently specified storage directory, as sset before the restoration
+    The restored database will be reconfigured to point to that storage directory.
     """
     try:
         # 1. Validate backup path
@@ -168,6 +167,12 @@ def restore_backup(backup_path):
         if not os.path.isfile(backup_sql_file):
             return {"success": False, "message": f"Backup SQL file missing: {backup_sql_file}"}
         
+        # retrieve current configuration settings
+        # specifically we need the database storage/config directory to be retained from current state before restoration
+        # suppose we have a backup and want to restore it on a different machine.
+        # the original directory will not have existed on the new machine
+        # we pass the new db_config directory to the restoration method
+        
         # 4. Prepare MySQL Command
         # NOTE: We do NOT pass the password in the args list for security.
         restore_command = [
@@ -191,6 +196,9 @@ def restore_backup(backup_path):
             result = subprocess.run(restore_command, stdin=sql_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 return {"success": False, "message": f"mysql restore failed: {result.stderr.decode()}"}
+
+        # now we need to change the database configuration to point to the new storage directory
+        update_database_config(storage_dir_path)
 
         # Now copy over data files from backup
         if not os.path.isdir(backup_data_dir):

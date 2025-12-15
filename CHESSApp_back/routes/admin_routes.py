@@ -37,7 +37,7 @@ def set_db_config():
     """
     Updates the database configuration.
     """
-    res = db_admin.update_database_config(request.json)
+    res = db_admin.update_database_config(request.json["data_dir"])
     if not res["success"]:
         return jsonify(res), 500
     return jsonify({"success": True, "data": res["data"]})
@@ -64,7 +64,7 @@ def create_backup():
 
 @admin_bp.route('/restore_backup', methods=['POST'])
 @require_json
-@validate_required_fields(['backup_path'])
+@validate_required_fields(['backup_path', 'storage_dir_path'])
 def restore_backup():
     """
     Restores the database from a backup file.
@@ -73,8 +73,9 @@ def restore_backup():
     try:
         data = request.get_json()
         backup_path = data.get('backup_path')
+        storage_dir_path = data.get('storage_dir_path')
         
-        result = db_admin.restore_backup(backup_path)
+        result = db_admin.restore_backup(backup_path, storage_dir_path)
         if result["success"]:
             return jsonify(result)
         else:

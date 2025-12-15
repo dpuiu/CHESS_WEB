@@ -1,19 +1,19 @@
 import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import CardGrid from './components/CardGrid/CardGrid';
-import build_penguin from "../../assets/images/build.penguin.2.jpeg";
-import download_penguin from '../../assets/images/download.penguin.1.jpeg';
-import search_penguin from '../../assets/images/search.penguin.1.jpeg';
+import browser_penguin from "../../assets/images/icon.browser.round.png";
+import download_penguin from '../../assets/images/icon.download.round.png';
+import search_penguin from '../../assets/images/icon.search.round.png';
 
 const cards = [
   {
     link: 'browser',
     title: 'Genome Browser',
-    imageSrc: build_penguin,
+    imageSrc: browser_penguin,
     description: 'Explore the genomes and annotations included in the CHESS database.'
   },
   {
-    link: 'download',
+    link: 'downloads',
     title: 'Download Curated Files',
     imageSrc: download_penguin,
     description: 'Download curated files from the CHESS database.'

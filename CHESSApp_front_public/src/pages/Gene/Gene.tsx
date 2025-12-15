@@ -53,11 +53,9 @@ const Gene: React.FC = () => {
   const secondaryTranscriptDetails = cmpTranscriptHook.getSecondaryTranscriptDetails();
 
   const isDualTranscriptMode = selectedPrimaryTranscript && selectedSecondaryTranscript;
-  console.log('isDualTranscriptMode', isDualTranscriptMode, selectedPrimaryTranscript, selectedSecondaryTranscript);
 
   // Fetch gene data when component mounts or gid changes
   useEffect(() => {
-    console.log('gid', gid);
     if (gid) {
       const numericGid = parseInt(gid, 10);
       if (!isNaN(numericGid)) {

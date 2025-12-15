@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Container, Row, Col } from 'react-bootstrap';
+import { Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import './CardGrid.css';
 
@@ -17,22 +17,15 @@ interface CardGridProps {
 const CardGrid: React.FC<CardGridProps> = ({ cards }) => {
   return (
     <Container className="my-4 card-grid">
-      <Row>
+      <Row className="justify-content-center gy-5">
         {cards.map((card, index) => (
-          <Col md={4} key={index} className="mb-4">
+          <Col key={index} xs={8} sm={6} md={4} lg={3} className="text-center">
             <Link to={card.link} className="text-decoration-none">
-              <Card className="h-100 text-center">
-                <Card.Img 
-                  src={card.imageSrc} 
-                  alt={card.title} 
-                  className="card-img-top"
-                  style={{ height: '200px', objectFit: 'cover' }}
-                />
-                <Card.Body className="d-flex flex-column">
-                  <Card.Title>{card.title}</Card.Title>
-                  <Card.Text className="flex-grow-1">{card.description}</Card.Text>
-                </Card.Body>
-              </Card>
+              <div className="circle-card">
+                <img src={card.imageSrc} alt={card.title} className="circle-card-img" />
+              </div>
+              <h5 className="mt-3 card-title">{card.title}</h5>
+              <p className="card-text">{card.description}</p>
             </Link>
           </Col>
         ))}

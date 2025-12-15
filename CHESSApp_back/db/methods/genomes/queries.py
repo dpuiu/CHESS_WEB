@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from db.db import db
+from db.db import db, to_absolute_path
 from db.methods.utils import *
 
 def organism_exists(taxonomy_id: int):
@@ -251,7 +251,7 @@ def get_genome_files():
                 "genome_file_id": row.genome_file_id,
                 "assembly_id": row.assembly_id,
                 "nomenclature": row.nomenclature,
-                "file_path": row.file_path
+                "file_path": to_absolute_path(row.file_path) if row.file_path else None
             }
         
         return {"success": True, "data": genome_files}
@@ -278,7 +278,8 @@ def get_fasta_file(assembly_id, nomenclature):
         if not result:
             raise Exception(f"No FASTA file found for assembly {assembly_id} with nomenclature '{nomenclature}'")
         
-        file_path = result.file_path
+        # Resolve relative path from DB to absolute path
+        file_path = to_absolute_path(result.file_path)
         friendly_file_name = result.assembly_name + "_" + nomenclature + ".fasta"
         
         # Split into directory and filename

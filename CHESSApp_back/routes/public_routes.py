@@ -142,19 +142,28 @@ def get_configurations():
 @public_bp.route('/fasta/<int:assembly_id>/<string:nomenclature>', methods=['GET'])
 def get_fasta(assembly_id, nomenclature):
     """
-    Get the fasta file for a specific organism, assembly, source, version, and nomenclature
+    Get the fasta file for a specific organism, assembly, source, version, and nomenclature.
+    Uses conditional=True to properly handle Range requests for indexed FASTA access.
     """
     try:
         fasta_file_result = get_fasta_file(assembly_id, nomenclature)
         
-        return send_from_directory(
+        response = send_from_directory(
             fasta_file_result["file_path"],
             fasta_file_result["file_name"],
             as_attachment=True,
-            download_name=fasta_file_result["friendly_file_name"],  # This sets the filename
+            download_name=fasta_file_result["friendly_file_name"],
             mimetype='text/plain',
-            max_age=3600  # Cache control
+            conditional=True  # Enable Range requests for JBrowse
         )
+        
+        # Add CORS headers for JBrowse
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Range'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Range, Content-Length, Accept-Ranges'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        
+        return response
         
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to get fasta file: {str(e)}"}), 500
@@ -167,14 +176,21 @@ def get_fai(assembly_id, nomenclature):
     try:
         fai_file_result = get_fai_file(assembly_id, nomenclature)
         
-        return send_from_directory(
+        response = send_from_directory(
             fai_file_result["file_path"],
             fai_file_result["file_name"],
             as_attachment=True,
-            download_name=fai_file_result["friendly_file_name"],  # Custom filename
+            download_name=fai_file_result["friendly_file_name"],
             mimetype='text/plain',
-            max_age=3600  # Cache control
+            conditional=True
         )
+        
+        # Add CORS headers for JBrowse
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Range, Content-Length, Accept-Ranges'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        
+        return response
         
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to get fai file: {str(e)}"}), 500
@@ -182,29 +198,31 @@ def get_fai(assembly_id, nomenclature):
 @public_bp.route('/gff3bgz_jbrowse2/<int:sva_id>/<string:nomenclature>', methods=['GET'])
 def get_gff3bgz_jbrowse2(sva_id, nomenclature):
     """
-    Get the gff3bgz file for a specific organism, assembly, source, version, and nomenclature
+    Get the gff3bgz file for a specific organism, assembly, source, version, and nomenclature.
+    Uses send_from_directory to properly handle Range requests for bgzip random access.
     """
     try:
         gff3bgz_file = get_source_file_by_extension(sva_id, nomenclature, "sorted_gff_bgz")
-        full_path = os.path.join(gff3bgz_file["file_path"], gff3bgz_file["file_name"])
         
-        try:
-            with open(full_path, 'rb') as f:
-                file_data = f.read()
+        # Use send_from_directory which properly handles:
+        # - HTTP Range requests (required for bgzip/tabix random access)
+        # - ETags and conditional requests
+        # - Proper streaming for large files
+        response = send_from_directory(
+            gff3bgz_file["file_path"],
+            gff3bgz_file["file_name"],
+            mimetype='application/octet-stream',
+            conditional=True  # Enable conditional responses (ETags, Range requests)
+        )
+        
+        # Add CORS headers for JBrowse
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Range'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Range, Content-Length, Accept-Ranges'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        
+        return response
             
-            response = Response(
-                file_data,
-                mimetype='application/octet-stream',
-                headers={
-                    'Content-Disposition': f'inline; filename="{gff3bgz_file["file_name"]}"',
-                    'Accept-Ranges': 'bytes',
-                    'Cache-Control': 'public, max-age=3600'
-                }
-            )
-            return response
-            
-        except Exception as file_read_error:
-            raise file_read_error
     except Exception as e:
         print(f"ERROR: Failed to get gff3bgz file: {str(e)}")
         return jsonify({"success": False, "message": f"Failed to get gff3bgz file: {str(e)}"}), 500
@@ -212,14 +230,23 @@ def get_gff3bgz_jbrowse2(sva_id, nomenclature):
 @public_bp.route('/gff3bgztbi/<int:sva_id>/<string:nomenclature>', methods=['GET'])
 def get_gff3bgztbi(sva_id, nomenclature):
     """
-    Get the gff3bgztbi file for a specific organism, assembly, source, version, and nomenclature
+    Get the gff3bgztbi (tabix index) file for a specific organism, assembly, source, version, and nomenclature.
     """
     try:
         gff3bgztbi_file = get_source_file_by_extension(sva_id, nomenclature, "sorted_gff_bgz_tbi")
-        full_path = os.path.join(gff3bgztbi_file["file_path"], gff3bgztbi_file["file_name"])
         
-        response = send_from_directory(gff3bgztbi_file["file_path"], gff3bgztbi_file["file_name"])
-        response.headers['Content-Type'] = 'application/octet-stream'
+        response = send_from_directory(
+            gff3bgztbi_file["file_path"],
+            gff3bgztbi_file["file_name"],
+            mimetype='application/octet-stream',
+            conditional=True
+        )
+        
+        # Add CORS headers for JBrowse
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Range, Content-Length, Accept-Ranges'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        
         return response
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to get gff3bgztbi file: {str(e)}"}), 500

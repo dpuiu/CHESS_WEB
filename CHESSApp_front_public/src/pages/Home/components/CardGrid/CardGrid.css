@@ -1,64 +1,46 @@
-/* CardGrid styles for Bootstrap */
-.card-grid .card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
+.card-grid .circle-card {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 0 auto;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.card-grid .card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  border-color: #dee2e6;
+.card-grid .circle-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.card-grid .card-img-top {
-  transition: transform 0.3s ease;
-}
-
-.card-grid .card:hover .card-img-top {
-  transform: scale(1.05);
-}
-
-.card-grid .card-body {
-  padding: 1.5rem;
+.card-grid .circle-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .card-grid .card-title {
   font-weight: 600;
+  margin-top: 1rem;
   color: #212529;
-  margin-bottom: 1rem;
 }
 
 .card-grid .card-text {
   color: #6c757d;
-  line-height: 1.6;
+  font-size: 0.9rem;
+  max-width: 250px;
+  margin: 0.5rem auto 0;
+  line-height: 1.4;
 }
 
-.card-grid .btn {
-  border-radius: 6px;
-  font-weight: 500;
-  padding: 0.5rem 1.5rem;
-}
-
-.card-grid .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.card-grid .btn-primary:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .card-grid .card-body {
-    padding: 1rem;
+/* Mobile responsiveness */
+@media (max-width: 576px) {
+  .card-grid .circle-card {
+    width: 160px;
+    height: 160px;
   }
-  
-  .card-grid .card-title {
-    font-size: 1.1rem;
-  }
-} 
+}

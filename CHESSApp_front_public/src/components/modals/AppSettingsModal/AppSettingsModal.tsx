@@ -102,7 +102,10 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
 
   const handleConfirmSelection = () => {
     const { organism, assembly, source, version, nomenclature } = tempSelections;
-    const currentRoute = extractRouteFromPath(location.pathname);
+    let currentRoute = extractRouteFromPath(location.pathname);
+    if (currentRoute === 'gene' || currentRoute === 'explore') {
+      currentRoute = '';
+    }
     if (organism && assembly && source && version && nomenclature) {
       const newUrl = `/o:${organism.taxonomy_id}/a:${assembly.assembly_id}/s:${source.source_id}/v:${version.sv_id}/n:${nomenclature}/${currentRoute}`;
       navigate(newUrl, { replace: true });

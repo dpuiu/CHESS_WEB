@@ -30,6 +30,7 @@ const DatabaseManagement: React.FC = () => {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [clearTableName, setClearTableName] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'danger'>('success');
@@ -211,12 +212,12 @@ const DatabaseManagement: React.FC = () => {
     setShowBackupModal(false);
   };
 
-  const handleRestoreConfirm = async (backupPath: string) => {
-    setShowRestoreModal(false);
+  const handleRestoreConfirm = async (backupPath: string, storageDirPath: string) => {
     setMessage(null);
+    setIsRestoring(true);
     
     try {
-      const result = await dispatch(restoreBackup(backupPath)).unwrap();
+      const result = await dispatch(restoreBackup({ backupPath, storageDirPath })).unwrap();
       setMessage(result.message || 'Database restored successfully from backup.');
       setMessageType('success');
       // Refresh database list after restore
@@ -232,6 +233,9 @@ const DatabaseManagement: React.FC = () => {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to restore database from backup.');
       setMessageType('danger');
+    } finally {
+      setIsRestoring(false);
+      setShowRestoreModal(false);
     }
   };
 
@@ -293,7 +297,7 @@ const DatabaseManagement: React.FC = () => {
 
       <DatabaseBackupRestoreModal
         showRestoreModal={showRestoreModal}
-        loading={loading}
+        loading={loading || isRestoring}
         onRestoreConfirm={handleRestoreConfirm}
         onRestoreCancel={handleRestoreCancel}
       />

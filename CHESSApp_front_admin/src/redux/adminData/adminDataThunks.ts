@@ -124,14 +124,14 @@ export const createBackup = createAsyncThunk(
 
 export const restoreBackup = createAsyncThunk(
   'adminData/restoreBackup',
-  async (backupPath: string, { rejectWithValue }) => {
+  async ({ backupPath, storageDirPath }: { backupPath: string; storageDirPath: string }, { rejectWithValue }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/restore_backup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ backup_path: backupPath }),
+        body: JSON.stringify({ backup_path: backupPath, storage_dir_path: storageDirPath }),
       });
       
       const result = await response.json();

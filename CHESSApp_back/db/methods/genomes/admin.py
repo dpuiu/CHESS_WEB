@@ -9,7 +9,7 @@ from .queries import *
 from db.methods.utils import *
 from .utils import *
 from ..TempFileManager import get_temp_file_manager
-from db.db import get_fasta_files_dir, get_source_files_dir
+from db.db import get_fasta_files_dir, get_source_files_dir, to_relative_path, to_absolute_path
 
 # ============================================================================
 # ORGANISM
@@ -159,18 +159,21 @@ def process_fasta_file(assembly_id, nomenclature, file):
             return {"success": False, "message": "Assembly not found"}
         
         safe_filename = f"{assembly.taxonomy_id}_{assembly_id}_{nomenclature}.fasta"
-        file_path = os.path.join(get_fasta_files_dir(), safe_filename)
-        file.save(file_path)
+        absolute_file_path = os.path.join(get_fasta_files_dir(), safe_filename)
+        file.save(absolute_file_path)
         
         try:
-            fasta_index = validate_and_index_fasta(file_path)
+            fasta_index = validate_and_index_fasta(absolute_file_path)
             
             if not fasta_index:
                 raise Exception("No valid sequences found in FASTA file")
             
             nomenclature_result = insert_nomenclature(nomenclature, assembly_id)
             sequence_count = create_sequence_entries(assembly_id, fasta_index, nomenclature)
-            file_record_id = insert_genome_file(assembly_id, file_path, nomenclature)
+            
+            # Store relative path in database for backup portability
+            relative_file_path = to_relative_path(absolute_file_path)
+            file_record_id = insert_genome_file(assembly_id, relative_file_path, nomenclature)
             
             print(f"Successfully processed {sequence_count} sequences")
             
@@ -187,8 +190,8 @@ def process_fasta_file(assembly_id, nomenclature, file):
             raise e
             
     except Exception as e:
-        if 'file_path' in locals() and os.path.exists(file_path):
-            os.remove(file_path)
+        if 'absolute_file_path' in locals() and os.path.exists(absolute_file_path):
+            os.remove(absolute_file_path)
         return {"success": False, "message": str(e)}
 
 def insert_nomenclature(nomenclature, assembly_id):
@@ -300,7 +303,8 @@ def remove_nomenclature_from_assembly(assembly_id, nomenclature):
         
         # Clean up the actual file from disk
         if genome_fasta_file and genome_fasta_file.file_path:
-            genome_fasta_file_path = os.path.join(os.getcwd(), genome_fasta_file.file_path)
+            # Resolve relative path to absolute path
+            genome_fasta_file_path = to_absolute_path(genome_fasta_file.file_path)
             genome_fasta_fai_file_path = genome_fasta_file_path + ".fai"
             if os.path.exists(genome_fasta_file_path):
                 try:
@@ -314,7 +318,8 @@ def remove_nomenclature_from_assembly(assembly_id, nomenclature):
                     print(f"Warning: Could not delete file {genome_fasta_fai_file_path}: {str(e)}")
 
         for source_file in source_files["data"]:
-            file_path = source_file.file_path
+            # Resolve relative path to absolute path
+            file_path = to_absolute_path(source_file.file_path)
             if os.path.exists(file_path):
                 try:
                     os.remove(file_path)
@@ -391,7 +396,8 @@ def process_nomenclature_tsv(source_file, assembly_id, source_nomenclature, new_
             
             if fasta_file:
                 # Create new FASTA file with new nomenclature names
-                source_file_path = os.path.join(os.getcwd(), "data", fasta_file.file_path)
+                # Resolve relative path from DB to absolute path
+                source_file_path = to_absolute_path(fasta_file.file_path)
                 if os.path.exists(source_file_path):
                     # Create new filename for the new nomenclature
                     new_filename = f"{assembly.taxonomy_id}_{assembly_id}_{new_nomenclature}.fasta"
@@ -400,13 +406,15 @@ def process_nomenclature_tsv(source_file, assembly_id, source_nomenclature, new_
                     translate_fasta_file(source_file_path, new_full_path, mapping)
                     validate_and_index_fasta(new_full_path)
                     
+                    # Store relative path in database
+                    relative_new_path = to_relative_path(new_full_path)
                     db.session.execute(text("""
                         INSERT INTO genome_file (assembly_id, nomenclature, file_path)
                         VALUES (:assembly_id, :nomenclature, :file_path)
                     """), {
                         "assembly_id": assembly_id,
                         "nomenclature": new_nomenclature,
-                        "file_path": new_full_path
+                        "file_path": relative_new_path
                     })
                 else:
                     return {"success": False, "message": f"Source FASTA file not found: {source_file_path}"}
@@ -419,11 +427,12 @@ def process_nomenclature_tsv(source_file, assembly_id, source_nomenclature, new_
             
             for source_file in source_files["data"]:
                 sva_id = source_file.sva_id
-                file_path = source_file.file_path
+                # Resolve relative path from DB to absolute path
+                file_path = to_absolute_path(source_file.file_path)
 
                 temp_new_nomenclature_gtf_file = temp_manager.create_temp_filename(name=f"{sva_id}_{new_nomenclature}.gtf")
                 source_file_base_name = f"{sva_id}_{new_nomenclature}"
-                source_file_base_name = os.path.join(SOURCE_FILES_DIR, source_file_base_name)
+                source_file_base_name = os.path.join(get_source_files_dir(), source_file_base_name)
                 
                 try:
                     try:
@@ -437,20 +446,25 @@ def process_nomenclature_tsv(source_file, assembly_id, source_nomenclature, new_
                         raise f"Error uncompressing gtf file: {e}"
 
                     convert_gtf_nomenclature(file_path,temp_new_nomenclature_gtf_file,mapping)
-                    source_files = prepare_source_files_from_gtf(temp_new_nomenclature_gtf_file,source_file_base_name)
+                    new_source_files = prepare_source_files_from_gtf(temp_new_nomenclature_gtf_file,source_file_base_name)
                 
-                    for source_file, source_file_data in source_files.items():
+                    for new_source_file, source_file_data in new_source_files.items():
+                        # Convert absolute path to relative path for database storage
+                        relative_file_path = to_relative_path(source_file_data["file_path"])
                         db.session.execute(
                             text("INSERT INTO source_file (sva_id, assembly_id, file_path, nomenclature, filetype, description) VALUES (:sva_id, :assembly_id, :file_path, :nomenclature, :filetype, :description)"),
                             {
                                 "sva_id": sva_id,
                                 "assembly_id": assembly_id,
-                                "file_path": source_file_data["file_path"],
+                                "file_path": relative_file_path,
                                 "nomenclature": new_nomenclature,
                                 "filetype": source_file_data["file_type"],
                                 "description": source_file_data["description"]
                             }
                         )
+                    
+                except Exception as e:
+                    raise e
                     
                 except Exception as e:
                     raise e

@@ -10,7 +10,7 @@ from db.methods.utils import *
 from db.methods.genomes.queries import *
 from db.methods.genomes.utils import *
 from db.methods.TX import TX
-from db.db import get_source_files_dir, get_temp_files_dir
+from db.db import get_source_files_dir, get_temp_files_dir, to_relative_path, to_absolute_path
 from db.methods.TempFileManager import get_temp_file_manager
 
 from .queries import *
@@ -122,7 +122,7 @@ def delete_source(source_id: int) -> Dict:
         if not source_exists_by_id(source_id):
             return {"success": False,"message": f"Source with ID '{source_id}' does not exist"}
         
-        # get files to cleanup
+        # get files to cleanup (these are relative paths from DB)
         files_to_remove = get_files_by_source_id(source_id)
         files_to_remove = [file_data[0] for file_data in files_to_remove]
         if files_to_remove is None:
@@ -134,10 +134,11 @@ def delete_source(source_id: int) -> Dict:
             {"source_id": source_id}
         )
         
-        # cleanup the files
-        for file_path in files_to_remove:
-            if os.path.exists(file_path):
-                os.remove(file_path)
+        # cleanup the files - resolve relative paths to absolute
+        for rel_file_path in files_to_remove:
+            abs_file_path = to_absolute_path(rel_file_path)
+            if os.path.exists(abs_file_path):
+                os.remove(abs_file_path)
         
         return {
             "success": True,
@@ -226,6 +227,7 @@ def delete_source_version(sv_id: int) -> Dict:
                 "message": f"Source version with ID {sv_id} does not exist"
             }
 
+        # Get relative file paths from DB
         files_to_remove = get_files_by_sv_id(sv_id)
         files_to_remove = [file_data[0] for file_data in files_to_remove]
         if files_to_remove is None:
@@ -236,10 +238,12 @@ def delete_source_version(sv_id: int) -> Dict:
             {"sv_id": sv_id}
         )
         
-        for file_path in files_to_remove:
-            if os.path.exists(file_path):
+        # Resolve relative paths to absolute and delete files
+        for rel_file_path in files_to_remove:
+            abs_file_path = to_absolute_path(rel_file_path)
+            if os.path.exists(abs_file_path):
                 try:
-                    os.remove(file_path)
+                    os.remove(abs_file_path)
                 except Exception as e:
                     continue
         
@@ -572,12 +576,14 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
                     source_files = prepare_source_files_from_gtf(temp_new_nomenclature_gtf_file,source_file_base_name)
                 
                 for source_file, source_file_data in source_files.items():
+                    # Convert absolute path to relative path for database storage
+                    relative_file_path = to_relative_path(source_file_data["file_path"])
                     db.session.execute(
                         text("INSERT INTO source_file (sva_id, assembly_id, file_path, nomenclature, filetype, description) VALUES (:sva_id, :assembly_id, :file_path, :nomenclature, :filetype, :description)"),
                         {
                             "sva_id": sva_id,
                             "assembly_id": assembly_id,
-                            "file_path": source_file_data["file_path"],
+                            "file_path": relative_file_path,
                             "nomenclature": target_nomenclature,
                             "filetype": source_file_data["file_type"],
                             "description": source_file_data["description"]
@@ -841,17 +847,18 @@ def delete_source_version_assembly(sva_id: int) -> Dict:
     Deletes a source version assembly.
     """
     try:
-        # Get file paths before deleting the records
+        # Get file paths before deleting the records (relative paths from DB)
         source_files_result = db.session.execute(text("SELECT file_path FROM source_file WHERE sva_id = :sva_id"), {"sva_id": sva_id})
         file_paths = [row.file_path for row in source_files_result]
         
         # Delete the database records
         db.session.execute(text("DELETE FROM source_version_assembly WHERE sva_id = :sva_id"), {"sva_id": sva_id})
         
-        # Cleanup the files
-        for file_path in file_paths:
-            if os.path.exists(file_path):
-                os.remove(file_path)
+        # Cleanup the files - resolve relative paths to absolute
+        for rel_file_path in file_paths:
+            abs_file_path = to_absolute_path(rel_file_path)
+            if os.path.exists(abs_file_path):
+                os.remove(abs_file_path)
                 
         return {"success": True, "message": "Source version assembly deleted successfully"}
     except Exception as e:
