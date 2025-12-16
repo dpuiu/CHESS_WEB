@@ -28,8 +28,7 @@ def initialize_paths():
         
         data_dir = res.data_dir.strip()
         if not os.path.isdir(data_dir):
-            print(f"WARNING: Configured data directory does not exist: {data_dir}")
-            return
+            raise ValueError(f"Data directory does not exist: {data_dir}")
         
         DATA_BASE_DIR = data_dir
         FASTA_FILES_DIR = os.path.join(data_dir, 'fasta_files')
@@ -41,8 +40,7 @@ def initialize_paths():
         print(f"INFO: Data paths initialized from: {data_dir}")
         
     except Exception as e:
-        # Don't crash the app if database_configuration table doesn't exist yet
-        print(f"WARNING: Could not initialize data paths: {e}")
+        raise RuntimeError(f"Failed to load data directory configuration: {e}")
 
 def ensure_data_directories():
     """Create all data directories if they don't exist."""

@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setLoading, setGlobalData, setError } from './globalDataSlice';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 export const fetchGlobalData = createAsyncThunk(
   'globalData/fetchGlobalData',

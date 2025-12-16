@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setLoading, setDatabaseConfig, setError } from './databaseConfigSlice';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 export const fetchDatabaseConfig = createAsyncThunk(
   'databaseConfig/fetchDatabaseConfig',
