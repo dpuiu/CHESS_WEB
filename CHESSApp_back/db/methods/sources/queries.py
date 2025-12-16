@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from db.db import db, to_absolute_path
+from db.db import db, to_absolute_path, is_paths_configured
 from db.methods.utils import *
 
 def source_exists_by_name(source_name):
@@ -126,8 +126,8 @@ def get_all_source_versions():
                 "scientific_name": row.scientific_name,
                 "common_name": row.common_name,
                 "organism_information": row.organism_information,
-                # File information
-                "file_path": to_absolute_path(row.file_path) if row.file_path else None,
+                # File information - convert to absolute path if paths are configured
+                "file_path": to_absolute_path(row.file_path) if (row.file_path and is_paths_configured()) else row.file_path,
                 "filetype": row.filetype,
                 "nomenclature": row.nomenclature,
                 "file_description": row.file_description,
@@ -171,8 +171,8 @@ def get_latest_source_versions():
                 "scientific_name": row.scientific_name,
                 "common_name": row.common_name,
                 "organism_information": row.organism_information,
-                # File information
-                "file_path": to_absolute_path(row.file_path) if row.file_path else None,
+                # File information - convert to absolute path if paths are configured
+                "file_path": to_absolute_path(row.file_path) if (row.file_path and is_paths_configured()) else row.file_path,
                 "filetype": row.filetype,
                 "nomenclature": row.nomenclature,
                 "file_description": row.file_description

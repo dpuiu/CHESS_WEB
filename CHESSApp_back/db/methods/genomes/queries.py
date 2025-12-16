@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from db.db import db, to_absolute_path
+from db.db import db, to_absolute_path, is_paths_configured
 from db.methods.utils import *
 
 def organism_exists(taxonomy_id: int):
@@ -247,11 +247,16 @@ def get_genome_files():
 
         genome_files = {}
         for row in result:
+            # Convert to absolute path if paths are configured, otherwise return relative
+            file_path = row.file_path
+            if file_path and is_paths_configured():
+                file_path = to_absolute_path(file_path)
+            
             genome_files[row.genome_file_id] = {
                 "genome_file_id": row.genome_file_id,
                 "assembly_id": row.assembly_id,
                 "nomenclature": row.nomenclature,
-                "file_path": to_absolute_path(row.file_path) if row.file_path else None
+                "file_path": file_path
             }
         
         return {"success": True, "data": genome_files}

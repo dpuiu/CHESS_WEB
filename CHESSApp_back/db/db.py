@@ -12,17 +12,24 @@ SOURCE_FILES_DIR = None
 TEMP_FILES_DIR = None
 
 def initialize_paths():
-    """Initialize data directory paths from database configuration."""
+    """Initialize data directory paths from database configuration.
+    
+    This function is safe to call even if the database configuration
+    is not yet set up. It will simply leave paths as None.
+    """
     global DATA_BASE_DIR, FASTA_FILES_DIR, SOURCE_FILES_DIR, TEMP_FILES_DIR
     
     try:
         res = db.session.execute(text("SELECT data_dir FROM database_configuration;")).fetchone()
         if not res or not res.data_dir:
+            # No configuration yet - this is OK for fresh databases
+            print("INFO: Database configuration not set. Data paths will be initialized when configuration is provided.")
             return
         
         data_dir = res.data_dir.strip()
         if not os.path.isdir(data_dir):
-            raise ValueError(f"Data directory does not exist: {data_dir}")
+            print(f"WARNING: Configured data directory does not exist: {data_dir}")
+            return
         
         DATA_BASE_DIR = data_dir
         FASTA_FILES_DIR = os.path.join(data_dir, 'fasta_files')
@@ -31,9 +38,11 @@ def initialize_paths():
         
         # Create directories
         ensure_data_directories()
+        print(f"INFO: Data paths initialized from: {data_dir}")
         
     except Exception as e:
-        raise RuntimeError(f"Failed to load data directory configuration: {e}")
+        # Don't crash the app if database_configuration table doesn't exist yet
+        print(f"WARNING: Could not initialize data paths: {e}")
 
 def ensure_data_directories():
     """Create all data directories if they don't exist."""
@@ -66,6 +75,10 @@ def get_data_base_dir():
     """Get the base data directory."""
     return DATA_BASE_DIR
 
+def is_paths_configured():
+    """Check if data paths have been configured."""
+    return DATA_BASE_DIR is not None
+
 # ============================================================================
 # PATH CONVERSION UTILITIES
 # ============================================================================
@@ -82,9 +95,12 @@ def to_relative_path(absolute_path: str) -> str:
     
     Returns:
         Relative path from the data base directory (e.g., 'fasta_files/file.fasta')
+    
+    Raises:
+        RuntimeError: If data paths are not initialized (database not configured)
     """
     if DATA_BASE_DIR is None:
-        raise RuntimeError("Data paths not initialized. Call initialize_paths() first.")
+        raise RuntimeError("Data paths not configured. Please set the data directory in Database Management settings.")
     
     # Normalize paths for comparison
     abs_path = os.path.normpath(absolute_path)
@@ -109,9 +125,12 @@ def to_absolute_path(relative_path: str) -> str:
 
     Returns:
         Full absolute path to the file
+    
+    Raises:
+        RuntimeError: If data paths are not initialized (database not configured)
     """
     if DATA_BASE_DIR is None:
-        raise RuntimeError("Data paths not initialized. Call initialize_paths() first.")
+        raise RuntimeError("Data paths not configured. Please set the data directory in Database Management settings.")
     
     # If already absolute, return as-is (for backward compatibility during migration)
     if os.path.isabs(relative_path):

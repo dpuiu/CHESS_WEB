@@ -26,10 +26,10 @@ admin_bp = Blueprint('admin', __name__)
 def db_config():
     """
     Returns the database configuration.
+    Returns success with null data_dir if not configured yet.
     """
     res = db_admin.get_database_config()
-    if res["data_dir"] is None:
-        return jsonify(res), 500
+    # Return success even if data_dir is None - frontend needs to handle unconfigured state
     return jsonify({"success": True, "data": res["data_dir"]})
 
 @admin_bp.route('/set_db_config', methods=['POST'])
