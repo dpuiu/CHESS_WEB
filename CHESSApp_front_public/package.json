@@ -15,6 +15,7 @@
     "3dmol": "^2.5.2",
     "@fontsource/roboto": "^5.0.3",
     "@jbrowse/core": "^3.6.4",
+    "@jbrowse/product-core": "^3.6.4",
     "@jbrowse/react-linear-genome-view": "^3.1.0",
     "@reduxjs/toolkit": "^2.3.0",
     "@types/d3": "^7.4.3",

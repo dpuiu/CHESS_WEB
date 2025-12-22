@@ -20,3 +20,7 @@ pysam>=0.22.0
 
 # Production WSGI server (optional, for deployment)
 gunicorn>=21.0.0
+
+pyfaidx>=0.8.0
+biopython>=1.80
+intervaltree>=3.1.0

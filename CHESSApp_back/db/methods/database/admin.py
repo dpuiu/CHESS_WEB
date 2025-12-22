@@ -177,12 +177,14 @@ def restore_backup(backup_path, storage_dir_path):
         # NOTE: We do NOT pass the password in the args list for security.
         restore_command = [
             mysql_base,
-            f"--socket={socket}",
             f"-u{user}",
             f"-h{host}",
             f"-p{password}",
             db_name
         ]
+
+        if socket != "":
+            restore_command.insert(1, f"--socket={socket}")
         
         backup_sql_file = os.path.join(backup_path, "db.backup.sql")
         if not os.path.isfile(backup_sql_file):
