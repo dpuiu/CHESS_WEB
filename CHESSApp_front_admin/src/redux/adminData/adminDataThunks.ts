@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { Organism, Assembly, Source, SourceVersion, SourceFile, Configuration, Dataset, DatabaseConfiguration } from '../../types/db_types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5001/api';
 
 export const fetchDatabaseList = createAsyncThunk(
   'adminData/fetchDatabaseList',

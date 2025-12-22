@@ -116,10 +116,19 @@ def create_backup(backup_path):
 
         print("Running command:", " ".join(dump_command))
         
+        # Pipe mysqldump through sed to remove DEFINER clauses
         with open(sql_backup_file, 'wb') as backup_file:
-            result = subprocess.run(dump_command, stdout=backup_file, stderr=subprocess.PIPE)
-            if result.returncode != 0:
-                return {"success": False, "message": f"mysqldump failed: {result.stderr.decode()}"}
+            dump_process = subprocess.Popen(dump_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            sed_command = ['sed', '-e', r's/DEFINER[ ]*=[ ]*[^*]*\*/\*/']
+            sed_process = subprocess.Popen(sed_command, stdin=dump_process.stdout, stdout=backup_file, stderr=subprocess.PIPE)
+            dump_process.stdout.close()
+            _, sed_stderr = sed_process.communicate()
+            _, dump_stderr = dump_process.communicate()
+            
+            if dump_process.returncode != 0:
+                return {"success": False, "message": f"mysqldump failed: {dump_stderr.decode()}"}
+            if sed_process.returncode != 0:
+                return {"success": False, "message": f"sed failed to remove DEFINERs: {sed_stderr.decode()}"}
 
         # now copy over all the data files - first need to get data directory from the database configuration itself
         res = db.session.execute(text("SELECT data_dir FROM database_configuration;")).fetchone()
