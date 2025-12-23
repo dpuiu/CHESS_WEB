@@ -58,7 +58,12 @@ const DatabaseManagement: React.FC = () => {
       const data: DatabaseListResponse = await dispatch(fetchDatabaseList()).unwrap();
       setDatabaseList(data);
     } catch (error) {
-      setDbError(error instanceof Error ? error.message : 'Failed to fetch database list');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to fetch database list';
+      setDbError(errorMessage);
     } finally {
       setDbLoading(false);
     }
@@ -70,7 +75,12 @@ const DatabaseManagement: React.FC = () => {
       setTableData(prev => ({ ...prev, [tableName]: data }));
       return data;
     } catch (error) {
-      throw error instanceof Error ? error : new Error('Failed to fetch table data');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to fetch table data';
+      throw new Error(errorMessage);
     }
   };
 
@@ -79,7 +89,12 @@ const DatabaseManagement: React.FC = () => {
       const result = await dispatch(resetDatabase()).unwrap();
       return result;
     } catch (error) {
-      throw error instanceof Error ? error : new Error('Failed to reset database');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to reset database';
+      throw new Error(errorMessage);
     }
   };
 
@@ -88,7 +103,12 @@ const DatabaseManagement: React.FC = () => {
       const result = await dispatch(clearTable(tableName)).unwrap();
       return result;
     } catch (error) {
-      throw error instanceof Error ? error : new Error('Failed to clear table');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to clear table';
+      throw new Error(errorMessage);
     }
   };
 
@@ -123,7 +143,12 @@ const DatabaseManagement: React.FC = () => {
       });
       setSearchTerms({});
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to reset the database.');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to reset the database.';
+      setMessage(errorMessage);
       setMessageType('danger');
     }
   };
@@ -181,7 +206,12 @@ const DatabaseManagement: React.FC = () => {
         await loadTableData(clearTableName, undefined, 10);
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to clear table.');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to clear table.';
+      setMessage(errorMessage);
       setMessageType('danger');
     } finally {
       setClearTableName(null);
@@ -203,7 +233,12 @@ const DatabaseManagement: React.FC = () => {
       setMessage(result.message || 'Database backup created successfully.');
       setMessageType('success');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to create database backup.');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to create database backup.';
+      setMessage(errorMessage);
       setMessageType('danger');
     }
   };
@@ -231,7 +266,13 @@ const DatabaseManagement: React.FC = () => {
       });
       setSearchTerms({});
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to restore database from backup.');
+      // Handle both Error objects and string errors from rejectWithValue
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+          ? error 
+          : 'Failed to restore database from backup.';
+      setMessage(errorMessage);
       setMessageType('danger');
     } finally {
       setIsRestoring(false);
