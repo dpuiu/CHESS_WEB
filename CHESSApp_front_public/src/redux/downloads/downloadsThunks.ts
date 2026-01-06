@@ -3,7 +3,7 @@ import { setDownloadsLoading, setDownloadsData, setDownloadsError } from './down
 import { DownloadFile } from '../../types/downloadsTypes';
 import { SourceVersionAssembly } from '../../types/dbTypes';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export const fetchDownloadFiles = createAsyncThunk(
   'downloads/fetchDownloadFiles',

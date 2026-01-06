@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setLoading, setGeneData, setError } from './geneSlice';
 import { GeneResponse } from '../../types/geneTypes';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export const fetchGeneByGid = createAsyncThunk(
   'gene/fetchGeneByGid',

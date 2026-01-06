@@ -14,14 +14,14 @@ export const DatabaseBackupRestoreModal: React.FC<DatabaseBackupRestoreModalProp
   onRestoreConfirm,
   onRestoreCancel,
 }) => {
-  const [restorePath, setRestorePath] = useState('/ccb/salz8-3/avaraby1/CHESS_WEB/CHESSApp_prod_backups/backup_2025-12-04_01-02-48');
-  const [storageDirPath, setStorageDirPath] = useState('/ccb/salz8-3/avaraby1/CHESS_WEB/CHESSApp_dev_storage');
+  const [restorePath, setRestorePath] = useState('/Users/sparrow/JHU/CHESS_WEB/backup_2025-12-21_22-53-30');
+  const [storageDirPath, setStorageDirPath] = useState('/Users/sparrow/JHU/CHESS_WEB/CHESS_WEB/CHESSApp_data');
   
   // Reset state when modal closes
   useEffect(() => {
     if (!showRestoreModal) {
-      setRestorePath('/ccb/salz8-3/avaraby1/CHESS_WEB/CHESSApp_prod_backups/backup_2025-12-04_01-02-48');
-      setStorageDirPath('/ccb/salz8-3/avaraby1/CHESS_WEB/CHESSApp_dev_storage');
+      setRestorePath('/Users/sparrow/JHU/CHESS_WEB/backup_2025-12-21_22-53-30');
+      setStorageDirPath('/Users/sparrow/JHU/CHESS_WEB/CHESS_WEB/CHESSApp_data');
     }
   }, [showRestoreModal]);
 

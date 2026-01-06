@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setPDBLoading, setPDBData, setPDBError, setPDBDownloading } from './pdbSlice';
 import { PDBData } from '../../types/pdbTypes';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export interface PDBResponse {
   success: boolean;
