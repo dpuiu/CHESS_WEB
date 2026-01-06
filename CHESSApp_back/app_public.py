@@ -1,10 +1,22 @@
-from flask import Flask, render_template
+import os
+from flask import Flask, render_template, send_from_directory
 from routes.public_routes import public_bp
 from db.db import db, initialize_paths
 from config import Config
 from middleware import setup_cors
 
-app = Flask(__name__)
+# Path to the built frontend (optional - only needed for production)
+FRONTEND_DIST = os.environ.get('CHESS_FRONTEND_DIST')
+
+# Configure Flask app based on whether we're serving static files
+if FRONTEND_DIST:
+    app = Flask(__name__, 
+                static_folder=os.path.join(FRONTEND_DIST, 'assets'),
+                static_url_path='/chess_app/assets',
+                template_folder=FRONTEND_DIST)
+else:
+    # Development mode - frontend served by Vite dev server
+    app = Flask(__name__)
 app.config.from_object(Config)
 
 # Setup middleware
@@ -38,6 +50,19 @@ def server_error(e):
 @app.route('/')
 def index():
     """Serve the public application"""
+    if FRONTEND_DIST:
+        return render_template('index.html')
+    return {'message': 'CHESS API is running. Frontend served by Vite dev server in development mode.'}
+
+@app.route('/chess_app')
+@app.route('/chess_app/')
+@app.route('/chess_app/<path:path>')
+def serve_frontend(path=''):
+    """Serve the frontend application at /chess_app"""
+    if not FRONTEND_DIST:
+        return {'message': 'Frontend not configured. Set CHESS_FRONTEND_DIST for production.'}, 404
+    if path and os.path.exists(os.path.join(FRONTEND_DIST, path)):
+        return send_from_directory(FRONTEND_DIST, path)
     return render_template('index.html')
 
 # ============================================================================
