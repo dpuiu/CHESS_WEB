@@ -47,8 +47,8 @@ sudo apt update && sudo apt upgrade -y
 ```bash
 # Python
 sudo apt install -y python3 python3-pip python3-venv python3-dev
-# Build tools
-sudo apt install -y build-essential git curl wget
+# Build tools and libraries for pysam (htslib)
+sudo apt install -y build-essential git curl wget zlib1g-dev libbz2-dev liblzma-dev
 
 
 # verify installation
@@ -166,6 +166,12 @@ export CHESSDB_USER="chess_public"
 export CHESSDB_PASS="your_public_password"
 export FLASK_DEBUG="0"
 
+# CORS Settings (Optional)
+# export CORS_ALLOWED_ORIGINS="http://yourdomain.com,https://yourdomain.com"
+
+# Frontend Serving (Optional - for production)
+# export CHESS_FRONTEND_DIST="/path/to/CHESS_WEB/CHESSApp_front_public/dist"
+
 # Optional: If using custom MySQL installation
 # export CHESSDB_SOCKET="/path/to/mysql.sock"
 # export CHESSDB_MYSQL_BASE="/path/to/mysql"
@@ -178,6 +184,9 @@ export CHESSDB_NAME="CHESS_DB"
 export CHESSDB_USER="chess_admin"
 export CHESSDB_PASS="your_admin_password"
 export FLASK_DEBUG="1"  # Set to "0" for production
+
+# CORS Settings (Optional)
+# export CORS_ALLOWED_ORIGINS="http://yourdomain.com,https://yourdomain.com"
 
 # Optional: If using custom MySQL installation
 # export CHESSDB_SOCKET="/path/to/mysql.sock"
@@ -296,4 +305,33 @@ Open your browser and navigate to: http://localhost:5113
 
 ---
 
-*Last updated: December 2025*
+## 8. Production Deployment
+
+For production, you should serve the Flask application using a WSGI server like Gunicorn and serve the frontend static files either via Nginx or through Flask (using the `CHESS_FRONTEND_DIST` configuration).
+
+### 8.1 Build the Frontend
+
+1.  Navigate to the public frontend directory:
+    ```bash
+    cd /path/to/CHESS_WEB/CHESSApp_front_public
+    npm run build
+    ```
+    This will create a `dist` directory with the compiled static files.
+
+### 8.2 Serve with Gunicorn
+
+1.  Install Gunicorn (if not already installed):
+    ```bash
+    pip install gunicorn
+    ```
+
+2.  Run the application:
+    ```bash
+    # Set environment variables (production settings)
+    export FLASK_DEBUG="0"
+    export CHESS_FRONTEND_DIST="/path/to/CHESS_WEB/CHESSApp_front_public/dist"
+    # export CORS_ALLOWED_ORIGINS="https://your-domain.com"
+    
+    # Run with Gunicorn (4 workers, binding to port 5000)
+    gunicorn -w 4 -b 0.0.0.0:5000 app_public:app
+    ```

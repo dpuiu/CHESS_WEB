@@ -87,4 +87,9 @@ if __name__ == '__main__':
     print(f"🔒 Access the admin dashboard at: http://{host}:{port}")
     print("📝 Remember: This should NEVER be exposed to external users")
     
-    app.run(host=host, port=port, debug=True)  # Only bind to localhost for security 
+    # Use configuration for debug mode
+    debug_mode = app.config.get('FLASK_DEBUG', False)
+    if debug_mode:
+        print("🐞 Debug mode is ON")
+    
+    app.run(host=host, port=port, debug=debug_mode)  # Only bind to localhost for security 

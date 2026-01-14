@@ -103,4 +103,9 @@ if __name__ == '__main__':
     print("📖 This application provides read-only access to the database")
     print(f"🌐 Access the public frontend at: http://{host}:{port}")
     
-    app.run(host=host, port=port, debug=True) 
+    # Use configuration for debug mode
+    debug_mode = app.config.get('FLASK_DEBUG', False)
+    if debug_mode:
+        print("🐞 Debug mode is ON")
+    
+    app.run(host=host, port=port, debug=debug_mode) 
