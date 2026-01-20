@@ -441,6 +441,8 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
         source_version_id = confirmation_data.get("source_version_id")
         description = confirmation_data.get("description")
 
+        excluded_attributes = confirmation_data.get("excluded_attributes", [])
+
         if not selected_nomenclature:
             return {"success": False,"message": "No nomenclature selected"}
         if not transcript_type_key:
@@ -522,6 +524,8 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
             
             for attribute_key, attribute_value in transcript.attributes.items():
                 if attribute_key in ["transcript_id", "gene_id"]:
+                    continue
+                if attribute_key in excluded_attributes:
                     continue
                 if attribute_key not in attribute_types:
                     continue
@@ -659,12 +663,10 @@ def to_gtf(assembly_id: int, selected_nomenclature: str, outfname: str) -> None:
         with open(outfname, "w") as out_fp:
             # Check if we have any results
             rows = [dict(row._mapping) for row in select_res]
-            if not rows:
-                out_fp.write("\t\t\ttranscript\t0\t0\t.\t+\t.\ttranscript_id \"nan\";\n")
-                out_fp.write("\t\t\texon\t0\t0\t.\t+\t.\ttranscript_id \"nan\";\n")
-            else:
+            if rows:
                 for tx in group_rows(rows):
                     out_fp.write(tx.to_gtf() + "\n")
+            # if nothing in the database - create empty file so gffcompare has something to run against
                     
     except Exception as e:
         raise
