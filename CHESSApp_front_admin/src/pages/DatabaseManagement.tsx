@@ -1,21 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState } from 'react';
 import { Container, Row, Col, Alert } from 'react-bootstrap';
-import { AppDispatch, RootState } from '../redux/store';
-import { 
-  fetchDatabaseList, 
-  fetchTableData,
-  resetDatabase, 
-  clearTable,
-  createBackup,
-  restoreBackup
-} from '../redux/adminData/adminDataThunks';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
-import { DatabaseListResponse, DatabaseTableDataResponse } from '../redux/adminData/adminDataSlice';
-import { 
+import {
+  useGetDatabaseListQuery,
+  useLazyGetTableDataQuery,
+  useResetDatabaseMutation,
+  useClearTableMutation,
+  useCreateBackupMutation,
+  useRestoreBackupMutation,
+} from '../redux/api/apiSlice';
+import { DatabaseListResponse, DatabaseTableDataResponse } from '../types';
+import {
   DatabaseRequiredSettings,
-  DatabaseHeader, 
-  DatabaseOverview, 
+  DatabaseHeader,
+  DatabaseOverview,
   DatabaseConfirmationModal,
   DatabaseBackupRestoreModal,
   DatabaseCreateBackupModal
@@ -23,76 +20,71 @@ import {
 import './DatabaseManagement.css';
 
 const DatabaseManagement: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.adminData);
-  
+  // RTK Query Hooks
+  const [triggerGetTableData] = useLazyGetTableDataQuery();
+  const [resetDatabase, { isLoading: isResetting }] = useResetDatabaseMutation();
+  const [clearTable, { isLoading: isClearing }] = useClearTableMutation();
+  const [createBackup, { isLoading: isCreatingBackup }] = useCreateBackupMutation();
+  const [restoreBackup, { isLoading: isRestoringBackup }] = useRestoreBackupMutation();
+
+  // Database Query (handles loading and error automatically)
+  const {
+    data: databaseList,
+    isLoading: dbListLoading,
+    error: dbListError
+  } = useGetDatabaseListQuery();
+
+  // Derived loading state for performing actions
+  const loading = isResetting || isClearing || isCreatingBackup || isRestoringBackup;
+
+  // Modal State
   const [showResetModal, setShowResetModal] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [clearTableName, setClearTableName] = useState<string | null>(null);
+
+  // UI State
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'danger'>('success');
   const [expanded, setExpanded] = useState<{ [table: string]: boolean }>({});
-  const [sectionsExpanded, setSectionsExpanded] = useState<{ tables: boolean; views: boolean }>({ 
-    tables: true, 
-    views: true 
+  const [sectionsExpanded, setSectionsExpanded] = useState<{ tables: boolean; views: boolean }>({
+    tables: true,
+    views: true
   });
   const [searchTerms, setSearchTerms] = useState<{ [table: string]: string }>({});
-  
-  // Local state for database data
-  const [databaseList, setDatabaseList] = useState<DatabaseListResponse | null>(null);
+
+  // Local state for table data (accumulated since we want to keep data for multiple expanded tables)
+  // We manually manage this because useLazyQuery only keeps the last result.
   const [tableData, setTableData] = useState<{ [tableName: string]: DatabaseTableDataResponse }>({});
-  const [dbLoading, setDbLoading] = useState(false);
-  const [dbError, setDbError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadDatabaseList();
-  }, [dispatch]);
-
-  const loadDatabaseList = async () => {
-    setDbLoading(true);
-    setDbError(null);
-    try {
-      const data: DatabaseListResponse = await dispatch(fetchDatabaseList()).unwrap();
-      setDatabaseList(data);
-    } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
-          : 'Failed to fetch database list';
-      setDbError(errorMessage);
-    } finally {
-      setDbLoading(false);
-    }
-  };
 
   const loadTableData = async (tableName: string, search?: string, limit: number = 10) => {
     try {
-      const data: DatabaseTableDataResponse = await dispatch(fetchTableData({ tableName, search, limit })).unwrap();
+      // unwrap() returns the raw data or throws an error
+      const data = await triggerGetTableData({ tableName, search, limit }).unwrap();
       setTableData(prev => ({ ...prev, [tableName]: data }));
       return data;
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
           : 'Failed to fetch table data';
+      // Re-throw to be caught by caller
       throw new Error(errorMessage);
     }
   };
 
   const performResetDatabase = async () => {
     try {
-      const result = await dispatch(resetDatabase()).unwrap();
+      const result = await resetDatabase().unwrap();
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
           : 'Failed to reset database';
       throw new Error(errorMessage);
     }
@@ -100,13 +92,13 @@ const DatabaseManagement: React.FC = () => {
 
   const performClearTable = async (tableName: string) => {
     try {
-      const result = await dispatch(clearTable(tableName)).unwrap();
+      const result = await clearTable(tableName).unwrap();
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
           : 'Failed to clear table';
       throw new Error(errorMessage);
     }
@@ -127,26 +119,24 @@ const DatabaseManagement: React.FC = () => {
   const handleResetConfirm = async () => {
     setShowResetModal(false);
     setMessage(null);
-    
+
     try {
       await performResetDatabase();
       setMessage('Database has been reset successfully.');
       setMessageType('success');
-      // Refresh database list after reset
-      await loadDatabaseList();
-      // Trigger global data reload
-      dispatch(clearGlobalData());
-      // Clear all table data
+
+      // Global Data and Database List are automatically invalidated by tags ('Database', 'GlobalData', etc)
+      // We just need to clear local table data state
       setTableData({});
       Object.keys(expanded).forEach(tableName => {
         setExpanded(prev => ({ ...prev, [tableName]: false }));
       });
       setSearchTerms({});
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
           : 'Failed to reset the database.';
       setMessage(errorMessage);
       setMessageType('danger');
@@ -159,7 +149,7 @@ const DatabaseManagement: React.FC = () => {
 
   const toggleExpand = async (tableName: string) => {
     const isCurrentlyExpanded = expanded[tableName];
-    
+
     if (!isCurrentlyExpanded) {
       // Load table data when expanding
       try {
@@ -169,13 +159,13 @@ const DatabaseManagement: React.FC = () => {
         return;
       }
     }
-    
+
     setExpanded(prev => ({ ...prev, [tableName]: !prev[tableName] }));
   };
 
   const handleSearch = async (tableName: string, searchTerm: string) => {
     setSearchTerms(prev => ({ ...prev, [tableName]: searchTerm }));
-    
+
     try {
       await loadTableData(tableName, searchTerm || undefined, 10);
     } catch (error) {
@@ -194,22 +184,21 @@ const DatabaseManagement: React.FC = () => {
 
   const handleClearConfirm = async () => {
     if (!clearTableName) return;
-    
+
     try {
       await performClearTable(clearTableName);
       setMessage(`Table ${clearTableName} cleared successfully.`);
       setMessageType('success');
-      // Trigger global data reload
-      dispatch(clearGlobalData());
-      // Refresh the table data
+
+      // Refresh the table data for the cleared table if it's open
       if (expanded[clearTableName]) {
         await loadTableData(clearTableName, undefined, 10);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
           : 'Failed to clear table.';
       setMessage(errorMessage);
       setMessageType('danger');
@@ -227,16 +216,16 @@ const DatabaseManagement: React.FC = () => {
   const handleBackupConfirm = async (backupPath: string) => {
     setShowBackupModal(false);
     setMessage(null);
-    
+
     try {
-      const result = await dispatch(createBackup(backupPath)).unwrap();
+      const result = await createBackup(backupPath).unwrap();
       setMessage(result.message || 'Database backup created successfully.');
       setMessageType('success');
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
           : 'Failed to create database backup.';
       setMessage(errorMessage);
       setMessageType('danger');
@@ -250,15 +239,13 @@ const DatabaseManagement: React.FC = () => {
   const handleRestoreConfirm = async (backupPath: string, storageDirPath: string) => {
     setMessage(null);
     setIsRestoring(true);
-    
+
     try {
-      const result = await dispatch(restoreBackup({ backupPath, storageDirPath })).unwrap();
+      const result = await restoreBackup({ backupPath, storageDirPath }).unwrap();
       setMessage(result.message || 'Database restored successfully from backup.');
       setMessageType('success');
-      // Refresh database list after restore
-      await loadDatabaseList();
-      // Trigger global data reload
-      dispatch(clearGlobalData());
+
+      // Cache invalidation handles reloading list
       // Clear all table data
       setTableData({});
       Object.keys(expanded).forEach(tableName => {
@@ -266,11 +253,10 @@ const DatabaseManagement: React.FC = () => {
       });
       setSearchTerms({});
     } catch (error) {
-      // Handle both Error objects and string errors from rejectWithValue
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : typeof error === 'string' 
-          ? error 
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
           : 'Failed to restore database from backup.';
       setMessage(errorMessage);
       setMessageType('danger');
@@ -284,19 +270,17 @@ const DatabaseManagement: React.FC = () => {
     setShowRestoreModal(false);
   };
 
-
-
   return (
     <Container className="database-management">
       <Row>
         <Col>
-          <DatabaseHeader 
+          <DatabaseHeader
             onResetDatabase={handleResetClick}
             onBackupDatabase={handleBackupClick}
             onRestoreDatabase={handleRestoreClick}
             loading={loading}
           />
-          
+
           {message && (
             <Alert variant={messageType} className="mt-3">
               {message}
@@ -310,10 +294,14 @@ const DatabaseManagement: React.FC = () => {
           </div>
 
           <DatabaseOverview
-            databaseList={databaseList}
+            databaseList={databaseList || null}
             tableData={tableData}
-            loading={dbLoading}
-            error={dbError}
+            loading={dbListLoading}
+            error={dbListError ? (
+              'status' in dbListError && typeof dbListError.status === 'number'
+                ? `Error loading database list (${dbListError.status})`
+                : 'Failed to fetch database list'
+            ) : null}
             expanded={expanded}
             sectionsExpanded={sectionsExpanded}
             searchTerms={searchTerms}
@@ -354,6 +342,4 @@ const DatabaseManagement: React.FC = () => {
   );
 };
 
-
-
-export default DatabaseManagement; 
+export default DatabaseManagement;

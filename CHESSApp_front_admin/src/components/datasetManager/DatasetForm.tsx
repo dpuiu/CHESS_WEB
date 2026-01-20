@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Alert, Row, Col } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
-import { Dataset, Source, Organism, Assembly } from '../../types';
-import { RootState } from '../../redux/store';
+import { useGetGlobalDataQuery } from '../../redux/api/apiSlice';
+import { Dataset, OptionData } from '../../types';
 
 interface DatasetFormProps {
   show: boolean;
@@ -12,7 +11,7 @@ interface DatasetFormProps {
   loading?: boolean;
 }
 
-interface OptionData {
+interface OptionDataWithArrays {
   organisms: Array<{ taxonomy_id: number; scientific_name: string; common_name: string }>;
   assemblies: Array<{ assembly_id: number; assembly_name: string }>;
   sources: Array<{ source_id: number; name: string }>;
@@ -26,8 +25,12 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
   dataset,
   loading = false
 }) => {
-  const { organisms, assemblies, sources, datasets: {data_types} } = useSelector((state: RootState) => state.globalData);
-  
+  const { data: globalData } = useGetGlobalDataQuery();
+  const organisms = globalData?.organisms;
+  const assemblies = globalData?.assemblies;
+  const sources = globalData?.sources;
+  const data_types = globalData?.datasets?.data_types;
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -40,7 +43,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
     file: null as File | null
   });
 
-  const [options, setOptions] = useState<OptionData>({
+  const [options, setOptions] = useState<OptionDataWithArrays>({
     organisms: [],
     assemblies: [],
     sources: [],
@@ -52,10 +55,10 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
     if (show) {
       // Populate organisms from globalData
       const organismsArray = organisms ? Object.values(organisms) : [];
-      
+
       setOptions(prev => ({
         ...prev,
-        organisms: organismsArray.map(org => ({
+        organisms: organismsArray.map((org: any) => ({
           taxonomy_id: org.taxonomy_id,
           scientific_name: org.scientific_name,
           common_name: org.common_name
@@ -93,7 +96,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       setError('Dataset name is required');
       return;
@@ -135,11 +138,11 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
   // Helper functions to load data from globalData
   const loadAssembliesFromGlobalData = (organismId: number) => {
     const assembliesArray = assemblies ? Object.values(assemblies) : [];
-    const organismAssemblies = assembliesArray.filter(assembly => assembly.taxonomy_id === organismId);
-    
+    const organismAssemblies = assembliesArray.filter((assembly: any) => assembly.taxonomy_id === organismId);
+
     setOptions(prev => ({
       ...prev,
-      assemblies: organismAssemblies.map(assembly => ({
+      assemblies: organismAssemblies.map((assembly: any) => ({
         assembly_id: assembly.assembly_id,
         assembly_name: assembly.assembly_name
       }))
@@ -149,11 +152,11 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
   const loadSourcesForAssembly = (assemblyId: number) => {
     const sourcesArray = sources ? Object.values(sources) : [];
     const validSources: Array<{ source_id: number; name: string }> = [];
-    
+
     // Find sources that have source version assemblies on the selected assembly
-    for (const source of sourcesArray) {
+    for (const source of sourcesArray as any[]) {
       if (source.versions) {
-        for (const version of Object.values(source.versions)) {
+        for (const version of Object.values(source.versions) as any[]) {
           if (version.assemblies) {
             // Check if any assembly in this version matches the selected assembly
             const hasAssembly = Object.values(version.assemblies).some(
@@ -170,7 +173,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
         }
       }
     }
-    
+
     setOptions(prev => ({
       ...prev,
       sources: validSources
@@ -179,10 +182,10 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
 
   const loadSourceVersionsFromGlobalData = (sourceId: number) => {
     const sourcesArray = sources ? Object.values(sources) : [];
-    const source = sourcesArray.find(source => source.source_id === sourceId);
-    
+    const source = sourcesArray.find((source: any) => source.source_id === sourceId) as any;
+
     if (source?.versions) {
-      const versionsArray = Object.values(source.versions);
+      const versionsArray = Object.values(source.versions) as any[];
       setOptions(prev => ({
         ...prev,
         versions: versionsArray.map(version => ({
@@ -192,8 +195,6 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
       }));
     }
   };
-
-
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -251,13 +252,13 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
   // Calculate SVA automatically from the selected options
   const calculateSVAFromSelections = (organismId: number, assemblyId: number, sourceId: number, svId: number): number => {
     const sourcesArray = sources ? Object.values(sources) : [];
-    
-    for (const source of sourcesArray) {
+
+    for (const source of sourcesArray as any[]) {
       if (source.source_id === sourceId && source.versions) {
-        for (const version of Object.values(source.versions)) {
+        for (const version of Object.values(source.versions) as any[]) {
           if (version.sv_id === svId && version.assemblies) {
             // Find the SVA that matches the assembly
-            for (const sva of Object.values(version.assemblies)) {
+            for (const sva of Object.values(version.assemblies) as any[]) {
               if (sva.assembly_id === assemblyId) {
                 return sva.sva_id;
               }
@@ -266,7 +267,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
         }
       }
     }
-    
+
     throw new Error('No matching source version assembly found for the selected options');
   };
 
@@ -284,7 +285,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
               {error}
             </Alert>
           )}
-          
+
           <Form.Group className="mb-3">
             <Form.Label>Dataset Name *</Form.Label>
             <Form.Control
@@ -317,7 +318,7 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
               disabled={loading}
             >
               <option value="">Select a data type...</option>
-              {Object.values(data_types || {}).map((dataType) => (
+              {Object.values(data_types || {}).map((dataType: any) => (
                 <option key={dataType.data_type} value={dataType.data_type}>
                   {dataType.data_type}
                 </option>
@@ -412,8 +413,6 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
             </Form.Select>
           </Form.Group>
 
-
-
           <Form.Group className="mb-3">
             <Form.Label>TSV File *</Form.Label>
             <Form.Control
@@ -446,4 +445,4 @@ export const DatasetForm: React.FC<DatasetFormProps> = ({
       </Form>
     </Modal>
   );
-}; 
+};

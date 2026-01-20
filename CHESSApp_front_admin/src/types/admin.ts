@@ -21,3 +21,17 @@ export interface TranscriptDataUpload {
   data_type: string;
   file: File;
 }
+
+export interface DatabaseListResponse {
+  tables: DatabaseTableInfo[];
+  views: DatabaseTableInfo[];
+  total_tables: number;
+  total_views: number;
+}
+
+export interface DatabaseTableDataResponse {
+  table_name: string;
+  data: DatabaseTableData;
+  search_term?: string;
+  limit: number;
+}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Table } from 'react-bootstrap';
-import { DatabaseTableDataResponse } from '../../redux/adminData/adminDataSlice';
+import { DatabaseTableDataResponse } from '../../types';
 
 interface TableDataDisplayProps {
   tableName: string;
@@ -9,11 +9,11 @@ interface TableDataDisplayProps {
   data?: DatabaseTableDataResponse;
 }
 
-export const TableDataDisplay: React.FC<TableDataDisplayProps> = ({ 
-  tableName, 
-  searchTerm, 
-  onSearch, 
-  data 
+export const TableDataDisplay: React.FC<TableDataDisplayProps> = ({
+  tableName,
+  searchTerm,
+  onSearch,
+  data
 }) => {
   if (!data) {
     return <div>Loading table data...</div>;
@@ -35,12 +35,12 @@ export const TableDataDisplay: React.FC<TableDataDisplayProps> = ({
           </span>
         )}
       </div>
-      
+
       <div className="fw-bold">Schema:</div>
       <div className="schema-display">
         {data.data.columns && data.data.columns.join(', ')}
       </div>
-      
+
       <div className="fw-bold">Data (showing {data.data.rows?.length || 0} rows):</div>
       <Table className="data-table">
         <thead>

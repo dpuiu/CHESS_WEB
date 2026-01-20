@@ -1,35 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Alert, Card, Table, Badge, Spinner } from 'react-bootstrap';
-import { RootState, AppDispatch } from '../redux/store';
-import { 
-  uploadFastaFile,
-  uploadNomenclatureTsv,
-  removeNomenclatureFromAssembly
-} from '../redux/adminData/adminDataThunks';
+import {
+  useGetGlobalDataQuery,
+  useUploadFastaFileMutation,
+  useUploadNomenclatureTsvMutation,
+  useRemoveNomenclatureFromAssemblyMutation
+} from '../redux/api/apiSlice';
 import FastaUploadModal from '../components/assemblyManager/FastaUploadModal';
 import NomenclatureUploadModal from '../components/assemblyManager/NomenclatureUploadModal';
 import { Assembly, Organism } from '../types';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
 
 const AssemblyDetail: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { assemblyId } = useParams<{ assemblyId: string }>();
-  
-  const { sources, assemblies, organisms, loading, error } = useSelector(
-    (state: RootState) => state.globalData
-  );
+
+  // RTK Query hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [uploadFastaFile] = useUploadFastaFileMutation();
+  const [uploadNomenclatureTsv] = useUploadNomenclatureTsvMutation();
+  const [removeNomenclatureFromAssembly] = useRemoveNomenclatureFromAssemblyMutation();
+
+  const organisms = globalData?.organisms;
+  const assemblies = globalData?.assemblies;
+
   const organismsArray: Organism[] = organisms ? Object.values(organisms) : [];
   const currentAssembly = assemblies?.[Number(assemblyId)] as Assembly | undefined;
-  
+
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [showNomenclatureModal, setShowNomenclatureModal] = useState(false);
-
-
 
   const handleUploadFasta = async (uploadData: {
     file: File;
@@ -41,63 +42,62 @@ const AssemblyDetail: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(uploadFastaFile({
+
+      await uploadFastaFile({
         assembly_id: uploadData.assembly_id,
         fasta_file: uploadData.file,
         nomenclature: uploadData.nomenclature,
         onProgress: uploadData.onProgress
-      })).unwrap();
+      }).unwrap();
       setFormSuccess('FASTA file uploaded successfully!');
       setShowUploadForm(false);
-
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to upload FASTA file');
+      setFormError(error.data?.message || error.message || 'Failed to upload FASTA file');
     }
   };
 
   const handleRemoveNomenclature = async (nomenclature: string) => {
     if (!currentAssembly) return;
-    
+
+    if (!window.confirm(`Are you sure you want to remove nomenclature "${nomenclature}"? This cannot be undone.`)) {
+      return;
+    }
+
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(removeNomenclatureFromAssembly({
+
+      await removeNomenclatureFromAssembly({
         assembly_id: currentAssembly.assembly_id,
         nomenclature
-      })).unwrap();
+      }).unwrap();
       setFormSuccess('Nomenclature removed successfully!');
-
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to remove nomenclature');
+      setFormError(error.data?.message || error.message || 'Failed to remove nomenclature');
     }
   };
 
-  const handleUploadNomenclatureTsv = async (uploadData: { 
-    tsv_file: File; 
-    source_nomenclature: string; 
-    new_nomenclature: string; 
+  const handleUploadNomenclatureTsv = async (uploadData: {
+    tsv_file: File;
+    source_nomenclature: string;
+    new_nomenclature: string;
   }) => {
     if (!currentAssembly) return;
-    
+
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(uploadNomenclatureTsv({
+
+      await uploadNomenclatureTsv({
         assembly_id: currentAssembly.assembly_id,
         tsv_file: uploadData.tsv_file,
         source_nomenclature: uploadData.source_nomenclature,
         new_nomenclature: uploadData.new_nomenclature
-      })).unwrap();
+      }).unwrap();
       setFormSuccess('Nomenclature created successfully!');
-
-      dispatch(clearGlobalData());
+      setShowNomenclatureModal(false);
     } catch (error: any) {
-      setFormError(error.message || 'Failed to create nomenclature');
+      setFormError(error.data?.message || error.message || 'Failed to create nomenclature');
     }
   };
 
@@ -115,7 +115,7 @@ const AssemblyDetail: React.FC = () => {
     return filePath.split('/').pop() || filePath;
   };
 
-  if (loading) {
+  if (globalLoading) {
     return (
       <Container fluid className="mt-4">
         <div className="text-center py-5">
@@ -127,12 +127,12 @@ const AssemblyDetail: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (globalError) {
     return (
       <Container fluid className="mt-4">
         <Alert variant="danger">
           <i className="fas fa-exclamation-triangle me-2"></i>
-          Error: {error}
+          Error: {'status' in (globalError as any) ? `Error loading data (${(globalError as any).status})` : 'Failed to load data'}
         </Alert>
       </Container>
     );
@@ -286,7 +286,7 @@ const AssemblyDetail: React.FC = () => {
                   <i className="fas fa-tags fa-3x text-muted mb-3"></i>
                   <p className="text-muted">No nomenclatures found for this assembly.</p>
                   <p className="text-muted small">
-                    {fastaStatus.hasFasta 
+                    {fastaStatus.hasFasta
                       ? "Add a new nomenclature using the button above."
                       : "Upload a FASTA file to create the first nomenclature for this assembly."
                     }
@@ -365,13 +365,13 @@ const AssemblyDetail: React.FC = () => {
       />
 
       <NomenclatureUploadModal
-          assemblyId={currentAssembly.assembly_id}
-          show={showNomenclatureModal}
-          onSubmit={handleUploadNomenclatureTsv}
-          onCancel={() => setShowNomenclatureModal(false)}
-        />
+        assemblyId={currentAssembly.assembly_id}
+        show={showNomenclatureModal}
+        onSubmit={handleUploadNomenclatureTsv}
+        onCancel={() => setShowNomenclatureModal(false)}
+      />
     </Container>
   );
 };
 
-export default AssemblyDetail; 
+export default AssemblyDetail;

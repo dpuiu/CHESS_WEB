@@ -1,29 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Button, Alert } from 'react-bootstrap';
-import { RootState, AppDispatch } from '../redux/store';
-import { 
-  addAssembly, 
-  updateAssembly, 
-  deleteAssembly
-} from '../redux/adminData/adminDataThunks';
+import { Container, Row, Col, Button, Alert, Spinner } from 'react-bootstrap';
+import {
+  useGetGlobalDataQuery,
+  useAddAssemblyMutation,
+  useUpdateAssemblyMutation,
+  useDeleteAssemblyMutation
+} from '../redux/api/apiSlice';
 import AssemblyForm from '../components/assemblyManager/AssemblyForm';
 import AssemblyTable from '../components/assemblyManager/AssemblyTable';
 import { Assembly, Organism } from '../types';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
 
 const AssemblyManagement: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  
-  const { sources, assemblies, organisms, loading, error } = useSelector(
-    (state: RootState) => state.globalData
-  );
-  
-  const assembliesArray: Assembly[] = assemblies ? Object.values(assemblies) : [];
-  const organismsArray: Organism[] = organisms ? Object.values(organisms) : [];
-  
+
+  // RTK Query hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [addAssembly, { isLoading: isAdding }] = useAddAssemblyMutation();
+  const [updateAssembly, { isLoading: isUpdating }] = useUpdateAssemblyMutation();
+  const [deleteAssembly, { isLoading: isDeleting }] = useDeleteAssemblyMutation();
+
+  const assemblies = globalData?.assemblies || {};
+  const organisms = globalData?.organisms || {};
+
+  const assembliesArray: Assembly[] = Object.values(assemblies);
+  const organismsArray: Organism[] = Object.values(organisms);
+
+  const loading = globalLoading;
+  const actionLoading = isAdding || isUpdating || isDeleting;
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAssembly, setEditingAssembly] = useState<Assembly | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -33,14 +38,12 @@ const AssemblyManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(addAssembly(assemblyData)).unwrap();
+
+      await addAssembly(assemblyData).unwrap();
       setFormSuccess('Assembly added successfully!');
       setShowAddForm(false);
-      
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to add assembly');
+      setFormError(error.data?.message || error.message || 'Failed to add assembly');
     }
   };
 
@@ -48,8 +51,8 @@ const AssemblyManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(updateAssembly({
+
+      await updateAssembly({
         assembly_id: assemblyData.assembly_id,
         assemblyData: {
           assembly_id: assemblyData.assembly_id,
@@ -57,13 +60,11 @@ const AssemblyManagement: React.FC = () => {
           taxonomy_id: assemblyData.taxonomy_id,
           information: assemblyData.information,
         }
-      })).unwrap();
+      }).unwrap();
       setFormSuccess('Assembly updated successfully!');
       setEditingAssembly(null);
-      
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to update assembly');
+      setFormError(error.data?.message || error.message || 'Failed to update assembly');
     }
   };
 
@@ -72,13 +73,11 @@ const AssemblyManagement: React.FC = () => {
       try {
         setFormError(null);
         setFormSuccess(null);
-        
-        await dispatch(deleteAssembly(assemblyId)).unwrap();
+
+        await deleteAssembly(assemblyId).unwrap();
         setFormSuccess('Assembly deleted successfully!');
-        
-        dispatch(clearGlobalData());
       } catch (error: any) {
-        setFormError(error.message || 'Failed to delete assembly');
+        setFormError(error.data?.message || error.message || 'Failed to delete assembly');
       }
     }
   };
@@ -103,20 +102,20 @@ const AssemblyManagement: React.FC = () => {
     return (
       <Container fluid className="mt-4">
         <div className="text-center py-5">
-          <div className="spinner-border" role="status">
+          <Spinner animation="border" role="status">
             <span className="visually-hidden">Loading...</span>
-          </div>
+          </Spinner>
         </div>
       </Container>
     );
   }
 
-  if (error) {
+  if (globalError) {
     return (
       <Container fluid className="mt-4">
         <Alert variant="danger">
           <i className="fas fa-exclamation-triangle me-2"></i>
-          Error: {error}
+          Error: {'status' in (globalError as any) ? `Error loading data (${(globalError as any).status})` : 'Failed to load data'}
         </Alert>
       </Container>
     );
@@ -134,6 +133,7 @@ const AssemblyManagement: React.FC = () => {
             <Button
               variant="primary"
               onClick={() => setShowAddForm(true)}
+              disabled={actionLoading}
             >
               <i className="fas fa-plus me-2"></i>
               Add Assembly
@@ -156,6 +156,11 @@ const AssemblyManagement: React.FC = () => {
 
       <Row>
         <Col>
+          {actionLoading && (
+            <div className="text-center mb-3">
+              <Spinner animation="border" size="sm" role="status" /> Updating...
+            </div>
+          )}
           <AssemblyTable
             assemblies={assembliesArray}
             organisms={organismsArray}
@@ -177,7 +182,7 @@ const AssemblyManagement: React.FC = () => {
             handleUpdateAssembly({ ...data, assembly_id: editingAssembly.assembly_id });
           } else {
             handleAddAssembly({
-              assembly_id: -1, // not used for adding - here as a placeholder
+              assembly_id: -1, // not used for adding
               assembly_name: data.assembly_name,
               taxonomy_id: data.taxonomy_id,
               information: data.information,
@@ -190,4 +195,4 @@ const AssemblyManagement: React.FC = () => {
   );
 };
 
-export default AssemblyManagement; 
+export default AssemblyManagement;

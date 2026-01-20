@@ -1,45 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState } from 'react';
 import { Container, Row, Col, Card, Button, Alert, Table, Badge, Spinner } from 'react-bootstrap';
-import { RootState, AppDispatch } from '../redux/store';
+import {
+  useGetGlobalDataQuery,
+  useCreateConfigurationMutation,
+  useUpdateConfigurationMutation,
+  useDeleteConfigurationMutation,
+  useActivateConfigurationMutation
+} from '../redux/api/apiSlice';
 import { Configuration } from '../types';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
 import { ConfigurationFormModal } from '../components/configurationManager';
-import { 
-  createConfiguration, 
-  updateConfiguration, 
-  deleteConfiguration, 
-  activateConfiguration 
-} from '../redux/adminData/adminDataThunks';
 
 const ConfigurationsManagement: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { configurations, organisms, assemblies, sources, loading: globalLoading, error } = useSelector((state: RootState) => state.globalData);
-  const { loading: adminLoading } = useSelector((state: RootState) => state.adminData);
-  
+  // RTK Query Hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [createConfiguration, { isLoading: isCreating }] = useCreateConfigurationMutation();
+  const [updateConfiguration, { isLoading: isUpdating }] = useUpdateConfigurationMutation();
+  const [deleteConfiguration, { isLoading: isDeleting }] = useDeleteConfigurationMutation();
+  const [activateConfiguration, { isLoading: isActivating }] = useActivateConfigurationMutation();
+
+  const configurations = globalData?.configurations || {};
+  const organisms = globalData?.organisms || {};
+  const assemblies = globalData?.assemblies || {};
+  const sources = globalData?.sources || {};
+
   // Convert data to arrays for easier use
-  const configurationsArray: Configuration[] = configurations ? Object.values(configurations) : [];
-  
+  const configurationsArray: Configuration[] = Object.values(configurations);
+
   // State for managing configurations
   const [showAddConfigModal, setShowAddConfigModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState<Configuration | null>(null);
-  
+
   // Form states
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  const adminLoading = isCreating || isUpdating || isDeleting || isActivating;
 
   // Configuration management handlers
   const handleAddConfiguration = async (configData: Configuration) => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(createConfiguration(configData)).unwrap();
+
+      await createConfiguration(configData).unwrap();
       setShowAddConfigModal(false);
       setFormSuccess('Configuration added successfully!');
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to add configuration');
+      setFormError(error.data?.message || error.message || 'Failed to add configuration');
     }
   };
 
@@ -47,13 +54,12 @@ const ConfigurationsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(updateConfiguration(configData)).unwrap();
+
+      await updateConfiguration(configData).unwrap();
       setEditingConfig(null);
       setFormSuccess('Configuration updated successfully!');
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to update configuration');
+      setFormError(error.data?.message || error.message || 'Failed to update configuration');
     }
   };
 
@@ -65,12 +71,11 @@ const ConfigurationsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(deleteConfiguration(configurationId)).unwrap();
+
+      await deleteConfiguration(configurationId).unwrap();
       setFormSuccess('Configuration deleted successfully!');
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to delete configuration');
+      setFormError(error.data?.message || error.message || 'Failed to delete configuration');
     }
   };
 
@@ -78,12 +83,11 @@ const ConfigurationsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(activateConfiguration(configurationId)).unwrap();
+
+      await activateConfiguration(configurationId).unwrap();
       setFormSuccess('Configuration activated successfully!');
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to activate configuration');
+      setFormError(error.data?.message || error.message || 'Failed to activate configuration');
     }
   };
 
@@ -99,12 +103,12 @@ const ConfigurationsManagement: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (globalError) {
     return (
       <Container fluid className="mt-4">
         <Alert variant="danger">
           <i className="fas fa-exclamation-triangle me-2"></i>
-          Error: {error}
+          Error: {'status' in (globalError as any) ? `Error loading data (${(globalError as any).status})` : 'Failed to load data'}
         </Alert>
       </Container>
     );
@@ -123,6 +127,7 @@ const ConfigurationsManagement: React.FC = () => {
               <Button
                 variant="primary"
                 onClick={() => setShowAddConfigModal(true)}
+                disabled={adminLoading}
               >
                 <i className="fas fa-plus me-2"></i>
                 Add Configuration
@@ -135,12 +140,18 @@ const ConfigurationsManagement: React.FC = () => {
                   {formError}
                 </Alert>
               )}
-              
+
               {formSuccess && (
                 <Alert variant="success" dismissible onClose={() => setFormSuccess(null)}>
                   <i className="fas fa-check-circle me-2"></i>
                   {formSuccess}
                 </Alert>
+              )}
+
+              {adminLoading && (
+                <div className="text-center mb-3">
+                  <Spinner animation="border" size="sm" role="status" /> Updating...
+                </div>
               )}
 
               {configurationsArray.length === 0 ? (
@@ -208,6 +219,7 @@ const ConfigurationsManagement: React.FC = () => {
                                   size="sm"
                                   onClick={() => handleActivateConfiguration(config.configuration_id)}
                                   title="Activate"
+                                  disabled={adminLoading}
                                 >
                                   <i className="fas fa-check"></i>
                                 </Button>
@@ -217,6 +229,7 @@ const ConfigurationsManagement: React.FC = () => {
                                 size="sm"
                                 onClick={() => setEditingConfig(config)}
                                 title="Edit"
+                                disabled={adminLoading}
                               >
                                 <i className="fas fa-edit"></i>
                               </Button>
@@ -225,6 +238,7 @@ const ConfigurationsManagement: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleDeleteConfiguration(config.configuration_id)}
                                 title="Delete"
+                                disabled={adminLoading}
                               >
                                 <i className="fas fa-trash"></i>
                               </Button>
@@ -263,4 +277,4 @@ const ConfigurationsManagement: React.FC = () => {
   );
 };
 
-export default ConfigurationsManagement; 
+export default ConfigurationsManagement;

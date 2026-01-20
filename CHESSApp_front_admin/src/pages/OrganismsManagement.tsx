@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { Container, Row, Col, Card, Button, Alert, Spinner } from 'react-bootstrap';
-import { RootState, AppDispatch } from '../redux/store';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
-import { addOrganism, updateOrganism, deleteOrganism } from '../redux/adminData/adminDataThunks';
+import {
+  useGetGlobalDataQuery,
+  useAddOrganismMutation,
+  useUpdateOrganismMutation,
+  useDeleteOrganismMutation
+} from '../redux/api/apiSlice';
 import { Organism } from '../types';
 import { OrganismForm } from '../components/organismsManager/OrganismForm';
 import { OrganismsTable } from '../components/organismsManager/OrganismsTable';
 import './OrganismsManagement.css';
 
 const OrganismsManagement: React.FC = () => {
-  const { sources, assemblies, organisms, loading, error } = useSelector(
-    (state: RootState) => state.globalData
-  );
-  const dispatch = useDispatch<AppDispatch>();
+  // RTK Query hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [addOrganism, { isLoading: isAdding }] = useAddOrganismMutation();
+  const [updateOrganism, { isLoading: isUpdating }] = useUpdateOrganismMutation();
+  const [deleteOrganism, { isLoading: isDeleting }] = useDeleteOrganismMutation();
+
+  const organisms = globalData?.organisms;
+
+  // Combine loading states for UI feedback (optional, or handle granularly)
+  const loading = globalLoading;
+  const actionLoading = isAdding || isUpdating || isDeleting;
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOrganism, setEditingOrganism] = useState<Organism | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -23,15 +33,12 @@ const OrganismsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(addOrganism(organismData)).unwrap();
+
+      const result = await addOrganism(organismData).unwrap();
       setFormSuccess(result.message || 'Organism added successfully');
       setShowAddForm(false);
-      
-      // Refresh data after adding
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to add organism');
+      setFormError(err.data?.message || err.message || 'Failed to add organism');
     }
   };
 
@@ -39,15 +46,12 @@ const OrganismsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(updateOrganism({ taxonomy_id, organismData })).unwrap();
+
+      const result = await updateOrganism({ taxonomy_id, organismData }).unwrap();
       setFormSuccess(result.message || 'Organism updated successfully');
       setEditingOrganism(null);
-      
-      // Refresh data after editing
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to update organism');
+      setFormError(err.data?.message || err.message || 'Failed to update organism');
     }
   };
 
@@ -59,14 +63,11 @@ const OrganismsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(deleteOrganism(taxonomy_id)).unwrap();
+
+      const result = await deleteOrganism(taxonomy_id).unwrap();
       setFormSuccess(result.message || 'Organism deleted successfully');
-      
-      // Refresh data after deleting
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to delete organism');
+      setFormError(err.data?.message || err.message || 'Failed to delete organism');
     }
   };
 
@@ -80,9 +81,10 @@ const OrganismsManagement: React.FC = () => {
                 <h2 className="organisms-title">Organisms Management</h2>
                 <p className="organisms-subtitle">Manage organism data in the database</p>
               </div>
-              <Button 
+              <Button
                 variant="primary"
                 onClick={() => setShowAddForm(true)}
+                disabled={actionLoading}
               >
                 <i className="fas fa-plus me-2"></i>
                 Add New Organism
@@ -92,9 +94,9 @@ const OrganismsManagement: React.FC = () => {
         </Col>
       </Row>
 
-      {error && (
+      {globalError && (
         <Alert variant="danger">
-          {error}
+          {'status' in (globalError as any) ? `Error loading global data (${(globalError as any).status})` : 'Failed to load data'}
         </Alert>
       )}
 
@@ -127,6 +129,11 @@ const OrganismsManagement: React.FC = () => {
                 </h5>
               </Card.Header>
               <Card.Body>
+                {actionLoading && (
+                  <div className="text-center mb-3">
+                    <Spinner animation="border" size="sm" role="status" /> Updating...
+                  </div>
+                )}
                 <OrganismsTable
                   organisms={organisms || {}}
                   onEdit={(organism) => setEditingOrganism(organism)}
@@ -154,11 +161,10 @@ const OrganismsManagement: React.FC = () => {
           setFormError(null);
           setFormSuccess(null);
         }}
+        isLoading={actionLoading}
       />
     </Container>
   );
 };
 
-
-
-export default OrganismsManagement; 
+export default OrganismsManagement;

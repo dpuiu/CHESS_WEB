@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, Card, Button, Alert } from 'react-bootstrap';
 import { DatabaseTableInfo } from '../../types';
-import { DatabaseTableDataResponse } from '../../redux/adminData/adminDataSlice';
+import { DatabaseTableDataResponse } from '../../types';
 import { TableDataDisplay } from './TableDataDisplay';
 
 interface DatabaseSectionProps {
@@ -38,7 +38,7 @@ export const DatabaseSection: React.FC<DatabaseSectionProps> = ({
       </span>
       <Badge bg="secondary">{items.length} items</Badge>
     </div>
-    
+
     {sectionExpanded && (
       <div className="section-content">
         {items.length === 0 ? (
@@ -50,8 +50,8 @@ export const DatabaseSection: React.FC<DatabaseSectionProps> = ({
             <Card key={item.name} className="table-item">
               <div className="table-header">
                 <div>
-                  <span 
-                    onClick={() => onToggleExpand(item.name)} 
+                  <span
+                    onClick={() => onToggleExpand(item.name)}
                     style={{ cursor: 'pointer' }}
                   >
                     {expanded[item.name] ? '▼' : '▶'} {item.name}
@@ -63,8 +63,8 @@ export const DatabaseSection: React.FC<DatabaseSectionProps> = ({
                   )}
                 </div>
                 {!isView && (
-                  <Button 
-                    variant="warning" 
+                  <Button
+                    variant="warning"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -75,13 +75,13 @@ export const DatabaseSection: React.FC<DatabaseSectionProps> = ({
                   </Button>
                 )}
               </div>
-              
+
               {expanded[item.name] && (
                 <div className="table-content">
                   {item.error ? (
                     <Alert variant="danger">Error: {item.error}</Alert>
                   ) : (
-                    <TableDataDisplay 
+                    <TableDataDisplay
                       tableName={item.name}
                       searchTerm={searchTerms[item.name] || ''}
                       onSearch={(searchTerm) => onSearch(item.name, searchTerm)}

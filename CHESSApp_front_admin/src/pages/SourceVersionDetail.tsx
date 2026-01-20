@@ -1,24 +1,30 @@
 import React, { useState, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Alert, Card, Table, Badge, Spinner, Modal } from 'react-bootstrap';
-import { RootState, AppDispatch } from '../redux/store';
-import { 
-  uploadSourceVersionFile,
-  confirmAnnotationUpload,
-  removeSourceVersionAssembly
-} from '../redux/adminData/adminDataThunks';
+import {
+  useGetGlobalDataQuery,
+  useUploadSourceVersionFileMutation,
+  useConfirmAnnotationUploadMutation,
+  useRemoveSourceVersionAssemblyMutation
+} from '../redux/api/apiSlice';
 import SourceVersionFileUploadForm from '../components/sourceManager/SourceVersionFileUploadForm';
 import SourceVersionFileUploadConfirmationModal from '../components/sourceManager/SourceVersionFileUploadConfirmationModal';
 import { SourceVersionAssembly, Assembly } from '../types/db_types';
 import { NomenclatureDetectionResult, AttributeMapping } from '../types/file';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
 
 const SourceVersionDetail: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { sourceId, svId } = useParams<{ sourceId: string; svId: string }>();
-  const { sources, assemblies, organisms, loading, error } = useSelector((state: RootState) => state.globalData);
+
+  // RTK Query hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [uploadSourceVersionFile] = useUploadSourceVersionFileMutation();
+  const [confirmAnnotationUpload] = useConfirmAnnotationUploadMutation();
+  const [removeSourceVersionAssembly] = useRemoveSourceVersionAssemblyMutation();
+
+  const sources = globalData?.sources;
+  const assemblies = globalData?.assemblies;
+  const organisms = globalData?.organisms;
 
   // Convert to arrays
   const assembliesArray = useMemo(() => assemblies ? Object.values(assemblies) : [], [assemblies]);
@@ -53,7 +59,7 @@ const SourceVersionDetail: React.FC = () => {
   }, [svAssemblies, assembliesArray]);
 
   // Helper to get assembly name
-  const getAssemblyName = (assemblyId: number) => 
+  const getAssemblyName = (assemblyId: number) =>
     assemblies?.[assemblyId]?.assembly_name || `Assembly ${assemblyId}`;
 
   // Helper to get organism name
@@ -79,10 +85,15 @@ const SourceVersionDetail: React.FC = () => {
       setFormError(null);
       setFormSuccess(null);
 
-      const result = await dispatch(uploadSourceVersionFile({
-        source_id: parseInt(sourceId!), file, sv_id: svId, assembly_id: assemblyId,
-        file_type: fileType, description, onProgress
-      })).unwrap();
+      const result = await uploadSourceVersionFile({
+        source_id: parseInt(sourceId!),
+        file,
+        sv_id: svId,
+        assembly_id: assemblyId,
+        file_type: fileType,
+        description,
+        onProgress
+      }).unwrap();
 
       if (result && typeof result === 'object' && 'status' in result && result.status === 'nomenclature_detection') {
         const detectionData = result as any;
@@ -96,16 +107,14 @@ const SourceVersionDetail: React.FC = () => {
           source_version_id: detectionData.source_version_id || 0,
           description: detectionData.description || ''
         });
-        console.log(detectionData);
         closeUploadModal();
         setShowConfirmationModal(true);
       } else {
         closeUploadModal();
         setFormSuccess('File uploaded successfully!');
-        dispatch(clearGlobalData());
       }
     } catch (err: any) {
-      setFormError(err.message || 'Failed to upload file');
+      setFormError(err.data?.message || err.message || 'Failed to upload file');
     }
   };
 
@@ -114,7 +123,7 @@ const SourceVersionDetail: React.FC = () => {
 
     try {
       setFormError(null);
-      await dispatch(confirmAnnotationUpload({
+      await confirmAnnotationUpload({
         source_id: parseInt(sourceId!),
         sv_id: parseInt(svId!),
         confirmationData: {
@@ -126,13 +135,12 @@ const SourceVersionDetail: React.FC = () => {
           source_version_id: detectionResult.source_version_id,
           description: detectionResult.description
         }
-      })).unwrap();
+      }).unwrap();
 
       closeConfirmationModal();
       setFormSuccess('File uploaded successfully!');
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to confirm upload');
+      setFormError(err.data?.message || err.message || 'Failed to confirm upload');
       closeConfirmationModal();
     }
   };
@@ -142,20 +150,19 @@ const SourceVersionDetail: React.FC = () => {
 
     try {
       setFormError(null);
-      await dispatch(removeSourceVersionAssembly({
+      await removeSourceVersionAssembly({
         source_id: parseInt(sourceId!),
         sv_id: parseInt(svId!),
         sva_id: svaId
-      })).unwrap();
+      }).unwrap();
       setFormSuccess('Assembly removed successfully!');
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to remove assembly');
+      setFormError(err.data?.message || err.message || 'Failed to remove assembly');
     }
   };
 
   // Loading state
-  if (loading) {
+  if (globalLoading) {
     return (
       <Container fluid className="py-5 text-center">
         <Spinner animation="border" />
@@ -164,10 +171,10 @@ const SourceVersionDetail: React.FC = () => {
   }
 
   // Error state
-  if (error) {
+  if (globalError) {
     return (
       <Container fluid className="mt-4">
-        <Alert variant="danger">Error: {error}</Alert>
+        <Alert variant="danger">Error: {'status' in (globalError as any) ? `Error loading data (${(globalError as any).status})` : 'Failed to load data'}</Alert>
       </Container>
     );
   }
@@ -362,4 +369,4 @@ const SourceVersionDetail: React.FC = () => {
   );
 };
 
-export default SourceVersionDetail; 
+export default SourceVersionDetail;

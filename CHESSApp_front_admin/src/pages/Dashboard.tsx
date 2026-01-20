@@ -1,25 +1,33 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Row, 
-  Col, 
+import {
+  Container,
+  Row,
+  Col,
   Card,
-  Spinner, 
-  Alert 
+  Spinner,
+  Alert
 } from 'react-bootstrap';
-import { RootState } from '../redux/store';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { QuickActionButton } from '../components/dashboard/QuickActionButton';
 
+import { useGetDatabaseConfigQuery, useGetGlobalDataQuery } from '../redux/api/apiSlice';
+
 const Dashboard: React.FC = () => {
-  const { sources, assemblies, organisms, configurations, datasets, loading, error } = useSelector(
-    (state: RootState) => state.globalData
-  );
-  const { data_dir, loading: databaseConfigLoading, error: databaseConfigError } = useSelector(
-    (state: RootState) => state.databaseConfig
-  );
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+
+  const sources = globalData?.sources;
+  const assemblies = globalData?.assemblies;
+  const organisms = globalData?.organisms;
+  const configurations = globalData?.configurations;
+  const datasets = globalData?.datasets;
+
+  const loading = globalLoading;
+  const error = globalError ? (globalError as any).toString() : null;
+
+  const { data: configData, isLoading: databaseConfigLoading, error: databaseConfigError } = useGetDatabaseConfigQuery();
+  const data_dir = configData?.data_dir || '';
+
   const navigate = useNavigate();
 
   const navigateToSection = (section: string) => {
@@ -56,9 +64,10 @@ const Dashboard: React.FC = () => {
     }
 
     if (error || databaseConfigError) {
+      const errorMessage = error || (databaseConfigError ? (databaseConfigError as any).toString() : 'Unknown error');
       return (
         <Alert variant="danger">
-          Error loading data: {error || databaseConfigError}
+          Error loading data: {errorMessage}
         </Alert>
       );
     }
@@ -69,7 +78,7 @@ const Dashboard: React.FC = () => {
           <i className="fas fa-exclamation-triangle me-2" />
           <strong>Database Configuration Required</strong>
           <br />
-          Please configure the database settings before accessing the dashboard. 
+          Please configure the database settings before accessing the dashboard.
           Go to <a href="/database" className="alert-link">Database Management</a> to set up the data directory.
         </Alert>
       );
@@ -85,9 +94,9 @@ const Dashboard: React.FC = () => {
 
     return (
       <Row>
-        <StatsCard 
-          count={isDatabaseConfigured ? 1 : 0} 
-          label="Database Config" 
+        <StatsCard
+          count={isDatabaseConfigured ? 1 : 0}
+          label="Database Config"
           variant={isDatabaseConfigured ? "success" : "danger"}
           icon="fas fa-cog"
         />

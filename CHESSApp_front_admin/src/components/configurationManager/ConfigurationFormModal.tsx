@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
+import { useGetGlobalDataQuery } from '../../redux/api/apiSlice';
 import { Configuration } from '../../types';
-import { RootState } from '../../redux/store';
 
 interface ConfigurationFormModalProps {
   show: boolean;
@@ -34,7 +33,11 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
   isEditing,
   loading = false
 }) => {
-  const { organisms, assemblies, sources } = useSelector((state: RootState) => state.globalData);
+  const { data: globalData } = useGetGlobalDataQuery();
+  const organisms = globalData?.organisms;
+  const assemblies = globalData?.assemblies;
+  const sources = globalData?.sources;
+
   const [formData, setFormData] = useState(initialFormState);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +45,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
   useEffect(() => {
     if (!show) return;
     setError(null);
-    
+
     if (isEditing && configuration) {
       setFormData({
         description: configuration.description,
@@ -63,57 +66,58 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
 
   // --- Derive options directly from globalData ---
   const organismList = organisms ? Object.values(organisms) : [];
-  
+
   const assemblyList = formData.organism_id && assemblies
-    ? Object.values(assemblies).filter(a => a.taxonomy_id === parseInt(formData.organism_id))
+    ? Object.values(assemblies).filter((a: any) => a.taxonomy_id === parseInt(formData.organism_id))
     : [];
-  
-  const selectedAssembly = formData.assembly_id && assemblies
-    ? Object.values(assemblies).find(a => a.assembly_id === parseInt(formData.assembly_id))
+
+  const selectedAssembly: any = formData.assembly_id && assemblies
+    ? Object.values(assemblies).find((a: any) => a.assembly_id === parseInt(formData.assembly_id))
     : null;
-  
+
   const nomenclatureList = selectedAssembly?.nomenclatures || [];
-  
+
   // Sequences for the selected nomenclature
   const sequenceList = (formData.nomenclature && selectedAssembly?.sequence_id_mappings)
     ? Object.entries(selectedAssembly.sequence_id_mappings)
-        .filter(([, info]) => formData.nomenclature in info.nomenclatures)
-        .map(([db_seqid, info]) => ({ 
-          name: info.nomenclatures[formData.nomenclature], 
-          sequence_id: db_seqid, 
-          length: info.length 
-        }))
+      .filter(([, info]: [string, any]) => formData.nomenclature in info.nomenclatures)
+      .map(([db_seqid, info]: [string, any]) => ({
+        name: info.nomenclatures[formData.nomenclature],
+        sequence_id: db_seqid,
+        length: info.length
+      }))
     : [];
-  
+
   // Get selected sequence's length for coordinate validation
   const selectedSequence = sequenceList.find(s => s.sequence_id.toString() === formData.sequence_id);
   const maxCoord = selectedSequence?.length || 0;
-  
+
   // Sources that have files for the selected assembly
   const sourceList = formData.assembly_id && sources
-    ? Object.values(sources).filter(source =>
-        source.versions && Object.values(source.versions).some(version =>
-          version.assemblies && Object.values(version.assemblies).some(
-            (sva: any) => sva.assembly_id === parseInt(formData.assembly_id)
-          )
+    ? Object.values(sources).filter((source: any) =>
+      source.versions && Object.values(source.versions).some((version: any) =>
+        version.assemblies && Object.values(version.assemblies).some(
+          (sva: any) => sva.assembly_id === parseInt(formData.assembly_id)
         )
       )
+    )
     : [];
-  
-  const selectedSource = formData.source_id && sources
-    ? Object.values(sources).find(s => s.source_id === parseInt(formData.source_id))
+
+  const selectedSource: any = formData.source_id && sources
+    ? Object.values(sources).find((s: any) => s.source_id === parseInt(formData.source_id))
     : null;
-  
+
   const versionList = selectedSource?.versions ? Object.values(selectedSource.versions) : [];
 
   // --- Handlers ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    // Cast to HTMLInputElement to access .checked safely
     const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
 
     setFormData(prev => {
       const updated = { ...prev, [name]: newValue };
-      
+
       // Reset downstream fields on cascading changes
       if (name === 'organism_id') {
         updated.assembly_id = '';
@@ -140,23 +144,23 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
       } else if (name === 'source_id') {
         updated.sv_id = '';
       }
-      
+
       return updated;
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.description.trim()) {
       return setError('Description is required');
     }
-    if (!formData.organism_id || !formData.assembly_id || !formData.nomenclature || 
-        !formData.sequence_id || !formData.start || !formData.end ||
-        !formData.source_id || !formData.sv_id) {
+    if (!formData.organism_id || !formData.assembly_id || !formData.nomenclature ||
+      !formData.sequence_id || !formData.start || !formData.end ||
+      !formData.source_id || !formData.sv_id) {
       return setError('All fields are required');
     }
-    
+
     const start = parseInt(formData.start);
     const end = parseInt(formData.end);
     if (start > end) {
@@ -165,7 +169,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
 
     onSubmit({
       configuration_id: configuration?.configuration_id || 0,
-      active: formData.set_active,
+      active: formData.set_active as boolean,
       description: formData.description.trim(),
       organism_id: parseInt(formData.organism_id),
       assembly_id: parseInt(formData.assembly_id),
@@ -184,8 +188,8 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
     onClose();
   };
 
-  const canSubmit = !loading && formData.description.trim() && 
-    formData.organism_id && formData.assembly_id && formData.nomenclature && 
+  const canSubmit = !loading && formData.description.trim() &&
+    formData.organism_id && formData.assembly_id && formData.nomenclature &&
     formData.sequence_id && formData.start && formData.end &&
     formData.source_id && formData.sv_id;
 
@@ -228,7 +232,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               disabled={loading}
             >
               <option value="">Select an organism...</option>
-              {organismList.map(org => (
+              {organismList.map((org: any) => (
                 <option key={org.taxonomy_id} value={org.taxonomy_id}>
                   {org.scientific_name} ({org.common_name})
                 </option>
@@ -245,7 +249,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               disabled={loading || !formData.organism_id}
             >
               <option value="">{formData.organism_id ? 'Select an assembly...' : 'Select organism first...'}</option>
-              {assemblyList.map(asm => (
+              {assemblyList.map((asm: any) => (
                 <option key={asm.assembly_id} value={asm.assembly_id}>
                   {asm.assembly_name}
                 </option>
@@ -331,7 +335,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               disabled={loading || !formData.assembly_id}
             >
               <option value="">{formData.assembly_id ? 'Select source...' : 'Select assembly first...'}</option>
-              {sourceList.map(src => (
+              {sourceList.map((src: any) => (
                 <option key={src.source_id} value={src.source_id}>{src.name}</option>
               ))}
             </Form.Select>
@@ -346,7 +350,7 @@ const ConfigurationFormModal: React.FC<ConfigurationFormModalProps> = ({
               disabled={loading || !formData.source_id}
             >
               <option value="">{formData.source_id ? 'Select version...' : 'Select source first...'}</option>
-              {versionList.map(ver => (
+              {versionList.map((ver: any) => (
                 <option key={ver.sv_id} value={ver.sv_id}>{ver.version_name}</option>
               ))}
             </Form.Select>

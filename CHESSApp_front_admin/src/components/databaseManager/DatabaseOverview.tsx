@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 import { DatabaseSection } from './index';
-import { DatabaseListResponse, DatabaseTableDataResponse } from '../../redux/adminData/adminDataSlice';
+import { DatabaseListResponse, DatabaseTableDataResponse } from '../../types';
 
 interface DatabaseOverviewProps {
   databaseList: DatabaseListResponse | null;
@@ -51,7 +51,7 @@ export const DatabaseOverview: React.FC<DatabaseOverviewProps> = ({
   return (
     <div>
       <h3 className="mt-4">Database Overview</h3>
-      
+
       <DatabaseSection
         title="Tables"
         items={databaseList.tables}
@@ -65,7 +65,7 @@ export const DatabaseOverview: React.FC<DatabaseOverviewProps> = ({
         onSearch={onSearch}
         onClearTable={onClearTable}
       />
-      
+
       <DatabaseSection
         title="Views"
         items={databaseList.views}

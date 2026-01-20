@@ -1,12 +1,7 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import { globalDataReducer } from './globalData';
-import { adminDataReducer } from './adminData';
-import { databaseConfigReducer } from './databaseConfig';
-
+import { apiSlice } from './api/apiSlice';
 const rootReducer = combineReducers({
-  globalData: globalDataReducer,
-  adminData: adminDataReducer,
-  databaseConfig: databaseConfigReducer,
+  [apiSlice.reducerPath]: apiSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

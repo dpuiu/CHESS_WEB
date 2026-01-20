@@ -1,29 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState } from 'react';
 import { Container, Row, Col, Card, Button, Alert } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import { RootState, AppDispatch } from '../redux/store';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
+import {
+  useGetGlobalDataQuery,
+  useCreateDatasetMutation,
+  useUpdateDatasetMutation,
+  useDeleteDatasetMutation,
+  useCreateDataTypeMutation,
+  useUpdateDataTypeMutation,
+  useDeleteDataTypeMutation
+} from '../redux/api/apiSlice';
 import { Dataset, DataType } from '../types';
 import { DatasetForm, DatasetsTable, DataTypeForm, DataTypesTable } from '../components/datasetManager';
-import { createDataset, updateDataset, deleteDataset, createDataType, updateDataType, deleteDataType } from '../redux/adminData';
 import './DatasetsManagement.css';
 
 const DatasetsManagement: React.FC = () => {
-  const { sources, assemblies, organisms, loading, error } = useSelector(
-    (state: RootState) => state.globalData
-  );
-  const { datasets: {datasets, data_types}, loading: datasetsLoading, error: datasetsError } = useSelector(
-    (state: RootState) => state.globalData
-  );
-  const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
-  
+  // RTK Query Hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [createDataset] = useCreateDatasetMutation();
+  const [updateDataset] = useUpdateDatasetMutation();
+  const [deleteDataset] = useDeleteDatasetMutation();
+  const [createDataType] = useCreateDataTypeMutation();
+  const [updateDataType] = useUpdateDataTypeMutation();
+  const [deleteDataType] = useDeleteDataTypeMutation();
+
+  const datasetsData = globalData?.datasets || { datasets: {}, data_types: {} };
+  const datasets = datasetsData.datasets || {};
+  const data_types = datasetsData.data_types || {};
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDataset, setEditingDataset] = useState<Dataset | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
-  
+
   // Data type management state
   const [showDataTypeForm, setShowDataTypeForm] = useState(false);
   const [editingDataType, setEditingDataType] = useState<DataType | null>(null);
@@ -32,15 +40,12 @@ const DatasetsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(createDataset(datasetData)).unwrap();
+
+      await createDataset(datasetData).unwrap();
       setFormSuccess('Dataset created successfully');
       setShowAddForm(false);
-      
-      // Refresh data after adding
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to create dataset');
+      setFormError(err.data?.message || err.message || 'Failed to create dataset');
     }
   };
 
@@ -48,15 +53,12 @@ const DatasetsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(updateDataset({ datasetId: id, datasetData })).unwrap();
+
+      await updateDataset({ datasetId: id, datasetData }).unwrap();
       setFormSuccess('Dataset updated successfully');
       setEditingDataset(null);
-      
-      // Refresh data after editing
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to update dataset');
+      setFormError(err.data?.message || err.message || 'Failed to update dataset');
     }
   };
 
@@ -68,14 +70,11 @@ const DatasetsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(deleteDataset(datasetId)).unwrap();
+
+      await deleteDataset(datasetId).unwrap();
       setFormSuccess('Dataset deleted successfully');
-      
-      // Refresh data after deleting
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to delete dataset');
+      setFormError(err.data?.message || err.message || 'Failed to delete dataset');
     }
   };
 
@@ -84,15 +83,12 @@ const DatasetsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(createDataType(dataTypeData)).unwrap();
+
+      await createDataType(dataTypeData).unwrap();
       setFormSuccess('Data type created successfully');
       setShowDataTypeForm(false);
-      
-      // Refresh data after adding
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to create data type');
+      setFormError(err.data?.message || err.message || 'Failed to create data type');
     }
   };
 
@@ -100,15 +96,12 @@ const DatasetsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(updateDataType({ dataType, dataTypeData })).unwrap();
+
+      await updateDataType({ dataType, dataTypeData }).unwrap();
       setFormSuccess('Data type updated successfully');
       setEditingDataType(null);
-      
-      // Refresh data after adding
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to update data type');
+      setFormError(err.data?.message || err.message || 'Failed to update data type');
     }
   };
 
@@ -120,18 +113,13 @@ const DatasetsManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      const result = await dispatch(deleteDataType(dataType)).unwrap();
+
+      await deleteDataType(dataType).unwrap();
       setFormSuccess('Data type deleted successfully');
-      
-      // Refresh data after adding
-      dispatch(clearGlobalData());
     } catch (err: any) {
-      setFormError(err.message || 'Failed to delete data type');
+      setFormError(err.data?.message || err.message || 'Failed to delete data type');
     }
   };
-
-
 
   return (
     <Container fluid className="datasets-management">
@@ -148,9 +136,9 @@ const DatasetsManagement: React.FC = () => {
         </Col>
       </Row>
 
-      {(error || datasetsError) && (
+      {globalError && (
         <Alert variant="danger">
-          {error || datasetsError}
+          {'status' in (globalError as any) ? `Error loading data (${(globalError as any).status})` : 'Failed to load data'}
         </Alert>
       )}
 
@@ -168,48 +156,48 @@ const DatasetsManagement: React.FC = () => {
 
       {/* Data Types Management Section */}
       <Row className="mb-4">
-          <Col xs={12}>
-            <Card>
-              <Card.Header>
-                <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0">
-                    <i className="fas fa-tags me-2" />
-                    Data Types ({Object.keys(data_types || {}).length})
-                  </h5>
-                  <Button 
-                    variant="success"
-                    size="sm"
-                    onClick={() => setShowDataTypeForm(true)}
-                  >
-                    <i className="fas fa-plus me-2"></i>
-                    Add New Data Type
-                  </Button>
-                </div>
-              </Card.Header>
-              <Card.Body>
-                <DataTypesTable
-                  dataTypes={Object.values(data_types || {})}
-                  onEdit={setEditingDataType}
-                  onDelete={handleDeleteDataType}
-                  loading={loading}
-                />
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+        <Col xs={12}>
+          <Card>
+            <Card.Header>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <i className="fas fa-tags me-2" />
+                  Data Types ({Object.keys(data_types || {}).length})
+                </h5>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => setShowDataTypeForm(true)}
+                >
+                  <i className="fas fa-plus me-2"></i>
+                  Add New Data Type
+                </Button>
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <DataTypesTable
+                dataTypes={Object.values(data_types || {})}
+                onEdit={setEditingDataType}
+                onDelete={handleDeleteDataType}
+                loading={globalLoading}
+              />
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
       <Row>
         <Col xs={12}>
           <Card>
             <Card.Header>
-            <div className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">
-                <i className="fas fa-chart-bar me-2" />
-                Datasets ({Object.keys(datasets).length})
-              </h5>
-              <Button 
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <i className="fas fa-chart-bar me-2" />
+                  Datasets ({Object.keys(datasets).length})
+                </h5>
+                <Button
                   variant="success"
-                    size="sm"
+                  size="sm"
                   onClick={() => setShowAddForm(true)}
                 >
                   <i className="fas fa-plus me-2"></i>
@@ -222,7 +210,7 @@ const DatasetsManagement: React.FC = () => {
                 datasets={Object.values(datasets)}
                 onEdit={setEditingDataset}
                 onDelete={handleDeleteDataset}
-                loading={datasetsLoading}
+                loading={globalLoading}
               />
             </Card.Body>
           </Card>
@@ -263,4 +251,4 @@ const DatasetsManagement: React.FC = () => {
   );
 };
 
-export default DatasetsManagement; 
+export default DatasetsManagement;

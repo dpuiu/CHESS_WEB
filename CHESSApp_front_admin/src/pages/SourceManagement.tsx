@@ -1,29 +1,36 @@
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Alert, Card, Table, Badge, Spinner } from 'react-bootstrap';
-import { RootState, AppDispatch } from '../redux/store';
 import {
-  addSource,
-  updateSource,
-  deleteSource
-} from '../redux/adminData/adminDataThunks';
+  useGetGlobalDataQuery,
+  useAddSourceMutation,
+  useUpdateSourceMutation,
+  useDeleteSourceMutation
+} from '../redux/api/apiSlice';
 import SourceFormModal from '../components/sourceManager/SourceFormModal';
 import { Source } from '../types';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
 
 const SourceManagement: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { sources, loading, error } = useSelector((state: RootState) => state.globalData);
-  
+
+  // RTK Query Hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [addSource, { isLoading: isAdding }] = useAddSourceMutation();
+  const [updateSource, { isLoading: isUpdating }] = useUpdateSourceMutation();
+  const [deleteSource, { isLoading: isDeleting }] = useDeleteSourceMutation();
+
+  const sources = globalData?.sources || {};
+
   // Convert data to arrays for easier use
-  const sourcesArray: Source[] = sources ? Object.values(sources) : [];
-  
+  const sourcesArray: Source[] = Object.values(sources);
+
+  const loading = globalLoading;
+  const actionLoading = isAdding || isUpdating || isDeleting;
+
   // State for managing sources
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
   const [editingSource, setEditingSource] = useState<Source | null>(null);
-  
+
   // Form states
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
@@ -33,34 +40,30 @@ const SourceManagement: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(addSource(sourceData)).unwrap();
+
+      await addSource(sourceData).unwrap();
       setShowAddSourceModal(false);
       setFormSuccess('Source added successfully!');
-
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to add source');
+      setFormError(error.data?.message || error.message || 'Failed to add source');
     }
   };
 
   const handleUpdateSource = async (sourceData: Source) => {
     if (!editingSource) return;
-    
+
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(updateSource({
+
+      await updateSource({
         source_id: editingSource.source_id,
         sourceData
-      })).unwrap();
+      }).unwrap();
       setEditingSource(null);
       setFormSuccess('Source updated successfully!');
-
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to update source');
+      setFormError(error.data?.message || error.message || 'Failed to update source');
     }
   };
 
@@ -68,17 +71,15 @@ const SourceManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this source? This will also delete all its versions.')) {
       return;
     }
-    
+
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(deleteSource(sourceId)).unwrap();
-      setFormSuccess('Source deleted successfully!');
 
-      dispatch(clearGlobalData());
+      await deleteSource(sourceId).unwrap();
+      setFormSuccess('Source deleted successfully!');
     } catch (error: any) {
-      setFormError(error.message || 'Failed to delete source');
+      setFormError(error.data?.message || error.message || 'Failed to delete source');
     }
   };
 
@@ -103,12 +104,12 @@ const SourceManagement: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (globalError) {
     return (
       <Container fluid className="mt-4">
         <Alert variant="danger">
           <i className="fas fa-exclamation-triangle me-2"></i>
-          Error: {error}
+          Error: {'status' in (globalError as any) ? `Error loading data (${(globalError as any).status})` : 'Failed to load data'}
         </Alert>
       </Container>
     );
@@ -126,6 +127,7 @@ const SourceManagement: React.FC = () => {
             <Button
               variant="primary"
               onClick={() => setShowAddSourceModal(true)}
+              disabled={actionLoading}
             >
               <i className="fas fa-plus me-2"></i>
               Add Source
@@ -161,6 +163,11 @@ const SourceManagement: React.FC = () => {
               </h5>
             </Card.Header>
             <Card.Body>
+              {actionLoading && (
+                <div className="text-center mb-3">
+                  <Spinner animation="border" size="sm" role="status" /> Updating...
+                </div>
+              )}
               {sourcesArray.length === 0 ? (
                 <div className="text-center py-4">
                   <i className="fas fa-database fa-3x text-muted mb-3"></i>
@@ -211,14 +218,14 @@ const SourceManagement: React.FC = () => {
                           </td>
                           <td>
                             {(() => {
-                              const validVersions = Object.values(source.versions || {}).filter(version => 
+                              const validVersions = Object.values(source.versions || {}).filter(version =>
                                 version !== null && version !== undefined && typeof version === 'object' && version.sv_id
                               );
                               const versionCount = validVersions.length;
-                              
+
                               return (
                                 <>
-                                  <Badge 
+                                  <Badge
                                     bg={versionCount > 0 ? 'success' : 'secondary'}
                                     className="me-1"
                                   >
@@ -248,9 +255,9 @@ const SourceManagement: React.FC = () => {
                               <Button
                                 variant="outline-secondary"
                                 size="sm"
-                                onClick={e => { 
-                                  e.stopPropagation(); 
-                                  setEditingSource(source); 
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setEditingSource(source);
                                 }}
                                 title="Edit Source"
                               >
@@ -259,9 +266,9 @@ const SourceManagement: React.FC = () => {
                               <Button
                                 variant="outline-danger"
                                 size="sm"
-                                onClick={e => { 
-                                  e.stopPropagation(); 
-                                  handleDeleteSource(source.source_id); 
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleDeleteSource(source.source_id);
                                 }}
                                 title="Delete Source"
                               >
@@ -291,4 +298,4 @@ const SourceManagement: React.FC = () => {
   );
 };
 
-export default SourceManagement; 
+export default SourceManagement;

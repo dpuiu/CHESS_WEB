@@ -1,37 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Alert, Card, Table, Badge, Spinner } from 'react-bootstrap';
-import { RootState, AppDispatch } from '../redux/store';
-import { 
-  addSourceVersion, 
-  deleteSourceVersion,
-  reorderSourceVersions
-} from '../redux/adminData/adminDataThunks';
+import {
+  useGetGlobalDataQuery,
+  useAddSourceVersionMutation,
+  useDeleteSourceVersionMutation,
+  useReorderSourceVersionsMutation
+} from '../redux/api/apiSlice';
 import SourceVersionFormModal from '../components/sourceManager/SourceVersionFormModal';
 import { Source, SourceVersion } from '../types';
-import { clearGlobalData } from '../redux/globalData/globalDataSlice';
 
 const SourceDetail: React.FC = () => {
   const { sourceId } = useParams<{ sourceId: string }>();
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { sources, loading, error } = useSelector((state: RootState) => state.globalData);
-  
+
+  // RTK Query Hooks
+  const { data: globalData, isLoading: globalLoading, error: globalError } = useGetGlobalDataQuery();
+  const [addSourceVersion, { isLoading: isAdding }] = useAddSourceVersionMutation();
+  const [deleteSourceVersion, { isLoading: isDeleting }] = useDeleteSourceVersionMutation();
+  const [reorderSourceVersions, { isLoading: isReordering }] = useReorderSourceVersionsMutation();
+
+  const sources = globalData?.sources || {};
+  const loading = globalLoading;
+
   const source: Source | undefined = sourceId ? sources?.[parseInt(sourceId)] : undefined;
-  
+
   // Helper function to get source versions for this source
   const getSourceVersions = () => {
     if (!source?.versions) return [];
-    
-    return Object.values(source.versions).filter(version => 
-      version && 
-      typeof version === 'object' && 
-      version.sv_id && 
+
+    return Object.values(source.versions).filter(version =>
+      version &&
+      typeof version === 'object' &&
+      version.sv_id &&
       version.version_name
     ).sort((a, b) => a.version_rank - b.version_rank); // Sort by rank
   };
-  
+
   const [showAddVersionModal, setShowAddVersionModal] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
@@ -49,14 +54,12 @@ const SourceDetail: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(addSourceVersion({ source_id: parseInt(sourceId!), svData })).unwrap();
+
+      await addSourceVersion({ source_id: parseInt(sourceId!), svData }).unwrap();
       setShowAddVersionModal(false);
       setFormSuccess('Source version added successfully!');
-
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to add source version');
+      setFormError(error.data?.message || error.message || 'Failed to add source version');
     }
   };
 
@@ -64,17 +67,15 @@ const SourceDetail: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this source version?')) {
       return;
     }
-    
+
     try {
       setFormError(null);
       setFormSuccess(null);
-      
-      await dispatch(deleteSourceVersion({ source_id: parseInt(sourceId!), sv_id: svId })).unwrap();
-      setFormSuccess('Source version deleted successfully!');
 
-      dispatch(clearGlobalData());
+      await deleteSourceVersion({ source_id: parseInt(sourceId!), sv_id: svId }).unwrap();
+      setFormSuccess('Source version deleted successfully!');
     } catch (error: any) {
-      setFormError(error.message || 'Failed to delete source version');
+      setFormError(error.data?.message || error.message || 'Failed to delete source version');
     }
   };
 
@@ -91,7 +92,7 @@ const SourceDetail: React.FC = () => {
 
   const handleDrop = (e: React.DragEvent, targetVersion: SourceVersion) => {
     e.preventDefault();
-    
+
     if (!draggedVersion || draggedVersion.sv_id === targetVersion.sv_id) {
       setDraggedVersion(null);
       return;
@@ -99,16 +100,16 @@ const SourceDetail: React.FC = () => {
 
     const draggedIndex = localVersions.findIndex(v => v.sv_id === draggedVersion.sv_id);
     const targetIndex = localVersions.findIndex(v => v.sv_id === targetVersion.sv_id);
-    
+
     const newVersions = [...localVersions];
     const [draggedItem] = newVersions.splice(draggedIndex, 1);
     newVersions.splice(targetIndex, 0, draggedItem);
-    
+
     const updatedVersions = newVersions.map((version, index) => ({
       ...version,
       version_rank: index
     }));
-    
+
     setLocalVersions(updatedVersions);
     setHasUnsavedChanges(true);
     setDraggedVersion(null);
@@ -118,19 +119,17 @@ const SourceDetail: React.FC = () => {
     try {
       setFormError(null);
       setFormSuccess(null);
-      
+
       const newOrder = localVersions.map(version => version.sv_id);
 
-      await dispatch(reorderSourceVersions({
+      await reorderSourceVersions({
         source_id: parseInt(sourceId!),
         new_order: newOrder
-      })).unwrap();
+      }).unwrap();
       setHasUnsavedChanges(false);
       setFormSuccess('Version order updated successfully!');
-
-      dispatch(clearGlobalData());
     } catch (error: any) {
-      setFormError(error.message || 'Failed to update version order');
+      setFormError(error.data?.message || error.message || 'Failed to update version order');
     }
   };
 
@@ -156,12 +155,12 @@ const SourceDetail: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (globalError) {
     return (
       <Container fluid className="mt-4">
         <Alert variant="danger">
           <i className="fas fa-exclamation-triangle me-2"></i>
-          Error: {error}
+          Error: {'status' in (globalError as any) ? `Error loading data (${(globalError as any).status})` : 'Failed to load data'}
         </Alert>
       </Container>
     );
@@ -178,6 +177,7 @@ const SourceDetail: React.FC = () => {
   }
 
   const sourceVersions = getSourceVersions();
+  const actionLoading = isAdding || isDeleting || isReordering;
 
   return (
     <Container fluid>
@@ -275,34 +275,37 @@ const SourceDetail: React.FC = () => {
                     You have unsaved changes
                   </small>
                 )}
-                                  {hasUnsavedChanges && (
-                    <div className="btn-group">
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={handleResetOrder}
-                        title="Reset Order"
-                      >
-                        <i className="fas fa-undo me-1"></i>Reset
-                      </Button>
-                      <Button
-                        variant="success"
-                        size="sm"
-                        onClick={handleSaveOrder}
-                        title="Save Order"
-                      >
-                        <i className="fas fa-save me-1"></i>Save Order
-                      </Button>
-                    </div>
-                  )}
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setShowAddVersionModal(true)}
-                  >
-                    <i className="fas fa-plus me-2"></i>
-                    Add Version
-                  </Button>
+                {hasUnsavedChanges && (
+                  <div className="btn-group">
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={handleResetOrder}
+                      title="Reset Order"
+                      disabled={actionLoading}
+                    >
+                      <i className="fas fa-undo me-1"></i>Reset
+                    </Button>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={handleSaveOrder}
+                      title="Save Order"
+                      disabled={actionLoading}
+                    >
+                      <i className="fas fa-save me-1"></i>Save Order
+                    </Button>
+                  </div>
+                )}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowAddVersionModal(true)}
+                  disabled={actionLoading}
+                >
+                  <i className="fas fa-plus me-2"></i>
+                  Add Version
+                </Button>
               </div>
             </Card.Header>
             <Card.Body>
@@ -334,7 +337,7 @@ const SourceDetail: React.FC = () => {
                         </tr>
                       ) : (
                         localVersions.map(version => (
-                          <tr 
+                          <tr
                             key={version.sv_id}
                             draggable
                             onDragStart={(e) => handleDragStart(e, version)}
@@ -348,7 +351,7 @@ const SourceDetail: React.FC = () => {
                             <td><strong>{version.version_name}</strong></td>
                             <td><Badge bg="info">{version.version_rank}</Badge></td>
                             <td>
-                              <Badge 
+                              <Badge
                                 bg={version.assemblies && Object.keys(version.assemblies).length > 0 ? 'success' : 'secondary'}
                                 className="me-1"
                               >
@@ -399,13 +402,13 @@ const SourceDetail: React.FC = () => {
       </Row>
 
       {/* Source Version Form Modal */}
-                        <SourceVersionFormModal
-                    show={showAddVersionModal}
-                    onClose={() => setShowAddVersionModal(false)}
-                    onSubmit={handleAddSourceVersion}
-                  />
+      <SourceVersionFormModal
+        show={showAddVersionModal}
+        onClose={() => setShowAddVersionModal(false)}
+        onSubmit={handleAddSourceVersion}
+      />
     </Container>
   );
 };
 
-export default SourceDetail; 
+export default SourceDetail;

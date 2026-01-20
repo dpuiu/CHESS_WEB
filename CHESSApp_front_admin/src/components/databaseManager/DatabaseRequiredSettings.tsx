@@ -1,43 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Form, Alert, Card } from 'react-bootstrap';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../redux/store';
-import { updateDatabaseConfig } from '../../redux/databaseConfig/databaseConfigThunks';
+import { useGetDatabaseConfigQuery, useUpdateDatabaseConfigMutation } from '../../redux/api/apiSlice';
 
 interface DatabaseRequiredSettingsProps {
   loading: boolean;
 }
 
-export const DatabaseRequiredSettings: React.FC<DatabaseRequiredSettingsProps> = ({ 
-  loading 
+export const DatabaseRequiredSettings: React.FC<DatabaseRequiredSettingsProps> = ({
+  loading
 }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { data_dir, loading: configLoading, error: configError } = useSelector((state: RootState) => state.databaseConfig);
-  
+  const { data: configData, isLoading: configLoading, error: configError } = useGetDatabaseConfigQuery();
+  const [updateConfig, { isLoading: isUpdating }] = useUpdateDatabaseConfigMutation();
+
+  const data_dir = configData?.data_dir || '';
+
   const [dataDir, setDataDir] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
-    if (data_dir) {
-      setDataDir(data_dir);
-    }
+    setDataDir(data_dir);
   }, [data_dir]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(false);
 
     try {
-      await dispatch(updateDatabaseConfig({ data_dir: dataDir })).unwrap();
+      await updateConfig({ data_dir: dataDir }).unwrap();
       setSubmitSuccess(true);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to update database configuration');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -81,7 +75,7 @@ export const DatabaseRequiredSettings: React.FC<DatabaseRequiredSettingsProps> =
         {configError && (
           <Alert variant="danger" className="mb-3">
             <i className="fas fa-exclamation-triangle me-2" />
-            {configError}
+            {typeof configError === 'string' ? configError : 'Failed to load configuration'}
           </Alert>
         )}
 
@@ -110,19 +104,19 @@ export const DatabaseRequiredSettings: React.FC<DatabaseRequiredSettingsProps> =
               onChange={(e) => setDataDir(e.target.value)}
               placeholder="Enter the path to the data directory"
               required
-              disabled={isSubmitting}
+              disabled={isUpdating}
             />
             <Form.Text className="text-muted">
               Please enter the absolute path to the data directory where CHESS data files are stored.
             </Form.Text>
           </Form.Group>
-          
-          <Button 
-            variant="primary" 
-            type="submit" 
-            disabled={isSubmitting || !dataDir.trim()}
+
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={isUpdating || !dataDir.trim()}
           >
-            {isSubmitting ? (
+            {isUpdating ? (
               <>
                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                 Saving...

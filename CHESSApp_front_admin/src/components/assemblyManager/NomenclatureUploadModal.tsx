@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
 import { Modal, Form, Button, Alert } from 'react-bootstrap';
-import { RootState } from '../../redux/store';
+import { useGetGlobalDataQuery } from '../../redux/api/apiSlice';
 
 interface NomenclatureUploadModalProps {
   assemblyId: number;
   show: boolean;
-  onSubmit: (uploadData: { 
-    tsv_file: File; 
-    source_nomenclature: string; 
-    new_nomenclature: string; 
+  onSubmit: (uploadData: {
+    tsv_file: File;
+    source_nomenclature: string;
+    new_nomenclature: string;
   }) => Promise<void>;
   onCancel: () => void;
 }
@@ -25,9 +24,9 @@ const NomenclatureUploadModal: React.FC<NomenclatureUploadModalProps> = ({
   const [newNomenclatureName, setNewNomenclatureName] = useState('');
   const [tsvFile, setTsvFile] = useState<File | null>(null);
 
-  // Get nomenclatures from Redux global data
-  const { assemblies } = useSelector((state: RootState) => state.globalData);
-  const currentAssembly = assemblies?.[assemblyId];
+  // Get nomenclatures from global data
+  const { data: globalData } = useGetGlobalDataQuery();
+  const currentAssembly = globalData?.assemblies?.[assemblyId];
   const availableNomenclatures = currentAssembly?.nomenclatures || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,7 +89,7 @@ const NomenclatureUploadModal: React.FC<NomenclatureUploadModalProps> = ({
               disabled={isSubmitting}
             >
               <option value="">Choose a source nomenclature...</option>
-              {availableNomenclatures.map(nom => (
+              {availableNomenclatures.map((nom: string) => (
                 <option key={nom} value={nom}>{nom}</option>
               ))}
             </Form.Select>
@@ -198,4 +197,4 @@ const NomenclatureUploadModal: React.FC<NomenclatureUploadModalProps> = ({
   );
 };
 
-export default NomenclatureUploadModal; 
+export default NomenclatureUploadModal;
