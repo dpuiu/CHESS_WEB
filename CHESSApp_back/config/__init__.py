@@ -20,12 +20,16 @@ class Config:
     CHESSDB_USER = os.getenv("CHESSDB_USER", "")
     CHESSDB_PASS = os.getenv("CHESSDB_PASS", "")
 
-    if CHESSDB_HOST == "" or CHESSDB_NAME == "" or CHESSDB_USER == "" or CHESSDB_PASS == "":
-        raise ValueError("Database configuration is incomplete. Please set CHESSDB_HOST, CHESSDB_NAME, CHESSDB_USER, and CHESSDB_PASS environment variables.")
+    # Validation: Host is only strictly required if Socket is NOT provided
+    if (CHESSDB_HOST == "" and CHESSDB_SOCKET == "") or CHESSDB_NAME == "" or CHESSDB_USER == "" or CHESSDB_PASS == "":
+        raise ValueError("Database configuration is incomplete. Please set CHESSDB_HOST (or CHESSDB_SOCKET), CHESSDB_NAME, CHESSDB_USER, and CHESSDB_PASS environment variables.")
     
     # Build the database URI for MySQL
-    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{CHESSDB_USER}:{CHESSDB_PASS}@{CHESSDB_HOST}/{CHESSDB_NAME}"
-    
+    if CHESSDB_SOCKET:
+        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{CHESSDB_USER}:{CHESSDB_PASS}@localhost/{CHESSDB_NAME}?unix_socket={CHESSDB_SOCKET}"
+    else:
+        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{CHESSDB_USER}:{CHESSDB_PASS}@{CHESSDB_HOST}/{CHESSDB_NAME}"
+
     # Flask-SQLAlchemy settings
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
