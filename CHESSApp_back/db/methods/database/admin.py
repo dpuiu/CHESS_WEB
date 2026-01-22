@@ -98,10 +98,8 @@ def create_backup(backup_path):
         # Run mysqldump
         dump_command = [
             mysqldump_path,
-            f"--socket={socket}",
             f"-u{user}",
             f"-p{password}",
-            f"-h{host}",
             "--single-transaction",
             "--routines",
             "--triggers",
@@ -113,6 +111,11 @@ def create_backup(backup_path):
             "--databases",
             db_name
         ]
+
+        if socket:
+            dump_command.append(f"--socket={socket}")
+        if host:
+            dump_command.append(f"-h{host}")
 
         print("Running command:", " ".join(dump_command))
         

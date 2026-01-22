@@ -28,7 +28,8 @@ def initialize_paths():
         
         data_dir = res.data_dir.strip()
         if not os.path.isdir(data_dir):
-            raise ValueError(f"Data directory does not exist: {data_dir}")
+            print(f"WARNING: Configured data directory does not exist: {data_dir}. Please update the path in settings.")
+            return
         
         DATA_BASE_DIR = data_dir
         FASTA_FILES_DIR = os.path.join(data_dir, 'fasta_files')

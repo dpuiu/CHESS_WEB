@@ -17,6 +17,7 @@ import {
   DatabaseBackupRestoreModal,
   DatabaseCreateBackupModal
 } from '../components/databaseManager';
+import { getErrorMessage } from '../utils/errorUtils';
 import './DatabaseManagement.css';
 
 const DatabaseManagement: React.FC = () => {
@@ -48,31 +49,18 @@ const DatabaseManagement: React.FC = () => {
   // UI State
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'danger'>('success');
-  const [expanded, setExpanded] = useState<{ [table: string]: boolean }>({});
-  const [sectionsExpanded, setSectionsExpanded] = useState<{ tables: boolean; views: boolean }>({
-    tables: true,
-    views: true
-  });
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [searchTerms, setSearchTerms] = useState<{ [table: string]: string }>({});
 
-  // Local state for table data (accumulated since we want to keep data for multiple expanded tables)
-  // We manually manage this because useLazyQuery only keeps the last result.
   const [tableData, setTableData] = useState<{ [tableName: string]: DatabaseTableDataResponse }>({});
 
   const loadTableData = async (tableName: string, search?: string, limit: number = 10) => {
     try {
-      // unwrap() returns the raw data or throws an error
       const data = await triggerGetTableData({ tableName, search, limit }).unwrap();
       setTableData(prev => ({ ...prev, [tableName]: data }));
       return data;
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Failed to fetch table data';
-      // Re-throw to be caught by caller
-      throw new Error(errorMessage);
+      throw new Error(getErrorMessage(error, 'Failed to fetch table data'));
     }
   };
 
@@ -81,12 +69,7 @@ const DatabaseManagement: React.FC = () => {
       const result = await resetDatabase().unwrap();
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Failed to reset database';
-      throw new Error(errorMessage);
+      throw new Error(getErrorMessage(error, 'Failed to reset database'));
     }
   };
 
@@ -95,12 +78,7 @@ const DatabaseManagement: React.FC = () => {
       const result = await clearTable(tableName).unwrap();
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Failed to clear table';
-      throw new Error(errorMessage);
+      throw new Error(getErrorMessage(error, 'Failed to clear table'));
     }
   };
 
@@ -125,20 +103,12 @@ const DatabaseManagement: React.FC = () => {
       setMessage('Database has been reset successfully.');
       setMessageType('success');
 
-      // Global Data and Database List are automatically invalidated by tags ('Database', 'GlobalData', etc)
-      // We just need to clear local table data state
       setTableData({});
-      Object.keys(expanded).forEach(tableName => {
-        setExpanded(prev => ({ ...prev, [tableName]: false }));
-      });
+      setSelectedTable(null);
       setSearchTerms({});
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Failed to reset the database.';
-      setMessage(errorMessage);
+      const message = error instanceof Error ? error.message : getErrorMessage(error, 'Failed to reset the database.');
+      setMessage(message);
       setMessageType('danger');
     }
   };
@@ -147,20 +117,15 @@ const DatabaseManagement: React.FC = () => {
     setShowResetModal(false);
   };
 
-  const toggleExpand = async (tableName: string) => {
-    const isCurrentlyExpanded = expanded[tableName];
-
-    if (!isCurrentlyExpanded) {
-      // Load table data when expanding
-      try {
-        await loadTableData(tableName, undefined, 10);
-      } catch (error) {
-        setMessage(`Failed to load data for ${tableName}: ${error}`);
-        return;
-      }
+  const handleSelectTable = async (tableName: string) => {
+    setSelectedTable(tableName);
+    // Load data if not already loaded or if we want to refresh on select
+    try {
+      await loadTableData(tableName, searchTerms[tableName] || undefined, 10);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : getErrorMessage(error);
+      setMessage(`Failed to load data for ${tableName}: ${message}`);
     }
-
-    setExpanded(prev => ({ ...prev, [tableName]: !prev[tableName] }));
   };
 
   const handleSearch = async (tableName: string, searchTerm: string) => {
@@ -169,12 +134,9 @@ const DatabaseManagement: React.FC = () => {
     try {
       await loadTableData(tableName, searchTerm || undefined, 10);
     } catch (error) {
-      setMessage(`Failed to search in ${tableName}: ${error}`);
+      const message = error instanceof Error ? error.message : getErrorMessage(error);
+      setMessage(`Failed to search in ${tableName}: ${message}`);
     }
-  };
-
-  const toggleSection = (section: 'tables' | 'views') => {
-    setSectionsExpanded(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
   const handleClearTable = (tableName: string) => {
@@ -190,17 +152,13 @@ const DatabaseManagement: React.FC = () => {
       setMessage(`Table ${clearTableName} cleared successfully.`);
       setMessageType('success');
 
-      // Refresh the table data for the cleared table if it's open
-      if (expanded[clearTableName]) {
+      // Refresh the table data for the cleared table if it's currently selected
+      if (selectedTable === clearTableName) {
         await loadTableData(clearTableName, undefined, 10);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Failed to clear table.';
-      setMessage(errorMessage);
+      const message = error instanceof Error ? error.message : getErrorMessage(error, 'Failed to clear table.');
+      setMessage(message);
       setMessageType('danger');
     } finally {
       setClearTableName(null);
@@ -222,12 +180,7 @@ const DatabaseManagement: React.FC = () => {
       setMessage(result.message || 'Database backup created successfully.');
       setMessageType('success');
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Failed to create database backup.';
-      setMessage(errorMessage);
+      setMessage(getErrorMessage(error, 'Failed to create database backup.'));
       setMessageType('danger');
     }
   };
@@ -248,17 +201,10 @@ const DatabaseManagement: React.FC = () => {
       // Cache invalidation handles reloading list
       // Clear all table data
       setTableData({});
-      Object.keys(expanded).forEach(tableName => {
-        setExpanded(prev => ({ ...prev, [tableName]: false }));
-      });
+      setSelectedTable(null);
       setSearchTerms({});
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Failed to restore database from backup.';
-      setMessage(errorMessage);
+      setMessage(getErrorMessage(error, 'Failed to restore database from backup.'));
       setMessageType('danger');
     } finally {
       setIsRestoring(false);
@@ -271,7 +217,7 @@ const DatabaseManagement: React.FC = () => {
   };
 
   return (
-    <Container className="database-management">
+    <Container className="database-management" fluid>
       <Row>
         <Col>
           <DatabaseHeader
@@ -302,11 +248,9 @@ const DatabaseManagement: React.FC = () => {
                 ? `Error loading database list (${dbListError.status})`
                 : 'Failed to fetch database list'
             ) : null}
-            expanded={expanded}
-            sectionsExpanded={sectionsExpanded}
+            selectedTable={selectedTable}
             searchTerms={searchTerms}
-            onToggleExpand={toggleExpand}
-            onToggleSection={toggleSection}
+            onSelectTable={handleSelectTable}
             onSearch={handleSearch}
             onClearTable={handleClearTable}
           />

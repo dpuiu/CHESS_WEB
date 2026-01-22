@@ -262,8 +262,9 @@ def process_transcript_data(dataset_id, sva_id, data_type, file):
             
             # Skip if transcript_id is not found in tx_dbxref
             if transcript_id not in transcript_map:
-                raise ValueError(f"Transcript ID not found in tx_dbxref: {transcript_id}")
-            
+                print(f"Warning: Transcript ID not found: {transcript_id}. Skipping.")
+                continue
+
             tid = transcript_map[transcript_id]
             
             # Insert transcript data

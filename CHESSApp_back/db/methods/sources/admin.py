@@ -185,13 +185,14 @@ def add_source_version(data: Dict) -> Dict:
         
         version_result = db.session.execute(
             text("""
-                INSERT INTO source_version (source_id, version_name, version_rank)
-                VALUES (:source_id, :version_name, :version_rank)
+                INSERT INTO source_version (source_id, version_name, version_rank, information)
+                VALUES (:source_id, :version_name, :version_rank, :information)
             """),
             {
                 "source_id": data["source_id"],
                 "version_name": data["version_name"],
-                "version_rank": rank
+                "version_rank": rank,
+                "information": data.get("information", "")
             }
         )
         
@@ -453,10 +454,11 @@ def confirm_and_process_annotation_file(confirmation_data: Dict) -> Dict:
             return {"success": False,"message": "Gene name attribute key is required"} 
 
         result = db.session.execute(
-            text("INSERT INTO source_version_assembly (sv_id, assembly_id) VALUES (:source_version_id, :assembly_id)"),
+            text("INSERT INTO source_version_assembly (sv_id, assembly_id, information) VALUES (:source_version_id, :assembly_id, :information)"),
             {
                 "source_version_id": source_version_id,
-                "assembly_id": assembly_id
+                "assembly_id": assembly_id,
+                "information": description
             }
         )
         sva_id = result.lastrowid

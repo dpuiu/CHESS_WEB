@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-    Container, 
-    Row, 
-    Col, 
-    Nav, 
-    Navbar, 
-    Button, 
-    Form, 
+import {
+    Container,
+    Row,
+    Col,
+    Nav,
+    Navbar,
+    Button,
+    Form,
     FormControl,
     InputGroup,
     Card
@@ -34,10 +34,10 @@ const Header: React.FC = () => {
     const navigate = useNavigate();
     const [showSearch, setShowSearch] = useState(false);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
-    
+
     const appData = useSelector((state: RootState) => state.appData);
     const dbData = useSelector((state: RootState) => state.dbData);
-    
+
     // Use the path manager hook
     const {
         buildPath,
@@ -76,11 +76,11 @@ const Header: React.FC = () => {
             <Card className="header border-0 rounded-0 shadow-sm">
                 <Navbar expand="lg" className="py-2 bg-white">
                     <Container fluid className="px-4">
-                        {/* Left section - Brand */}
-                        <Navbar.Brand 
-                            as={Link} 
+                        {/* Brand - Always visible */}
+                        <Navbar.Brand
+                            as={Link}
                             to={buildPath('').path}
-                            className="d-flex align-items-center text-decoration-none brand-section"
+                            className="d-flex align-items-center text-decoration-none brand-section me-auto"
                         >
                             <img src={chess_logo} alt="CHESS" className="brand-logo" />
                             <div className="brand-text">
@@ -89,67 +89,78 @@ const Header: React.FC = () => {
                             </div>
                         </Navbar.Brand>
 
-                        {/* Center section - Navigation */}
-                        <div className="d-none d-lg-flex justify-content-center flex-grow-1">
-                            <Nav className="nav-center">
+                        {/* Toggler for mobile */}
+                        <Navbar.Toggle aria-controls="basic-navbar-nav" className="custom-toggler ms-2" />
+
+                        {/* Collapsible Content */}
+                        <Navbar.Collapse id="basic-navbar-nav">
+                            {/* Center Navigation */}
+                            <Nav className="nav-center mx-auto my-2 my-lg-0 align-items-lg-center">
                                 <Nav.Item>
                                     <Button
                                         variant="link"
                                         size="sm"
                                         onClick={() => setShowSearch(!showSearch)}
-                                        className="p-2"
+                                        className="search-btn d-none d-lg-flex"
+                                        aria-label="Search"
                                     >
-                                        <Search className="me-1" />
+                                        <Search />
                                     </Button>
+                                    {/* Mobile Search Link */}
+                                    <Nav.Link
+                                        className="d-lg-none nav-link-custom"
+                                        onClick={() => setShowSearch(!showSearch)}
+                                    >
+                                        <Search className="me-2" /> Search
+                                    </Nav.Link>
                                 </Nav.Item>
                                 {navItems.map((item) => (
                                     <Nav.Item key={item.id}>
-                                        <Nav.Link 
+                                        <Nav.Link
                                             as={Link}
                                             to={item.to}
-                                            className={`${isRouteActive(item.id, location.pathname) ? 'active' : ''}`}
+                                            className={`nav-link-custom ${isRouteActive(item.id, location.pathname) ? 'active' : ''}`}
                                         >
                                             {item.label}
                                         </Nav.Link>
                                     </Nav.Item>
                                 ))}
                             </Nav>
-                        </div>
 
-                        {/* Right section - Fixed width container for consistent positioning */}
-                        <div className="d-flex align-items-center right-section" style={{ minWidth: '300px', justifyContent: 'flex-end' }}>
-                            <div className="me-3">
-                                {isInitialized && isStructuredAppPath(location.pathname) && (
-                                    <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => setShowSettingsModal(true)}
-                                        className="d-flex align-items-center w-100"
-                                    >
-                                        <span className="text-truncate">
-                                            {appData.selections.source_id && appData.selections.version_id ? (
-                                                <>
-                                                    {dbData.sources[appData.selections.source_id]?.name || 'Unknown Source'} (
-                                                    {dbData.sources[appData.selections.source_id]?.versions?.[appData.selections.version_id]?.version_name || 'Unknown Version'})
-                                                </>
-                                            ) : (
-                                                'Configure Genome Settings'
-                                            )}
-                                        </span>
-                                    </Button>
-                                )}
+                            {/* Right Section */}
+                            <div className="d-flex flex-column flex-lg-row align-items-lg-center right-section gap-3 gap-lg-0">
+                                <div className="me-lg-3 w-100 w-lg-auto">
+                                    {isInitialized && isStructuredAppPath(location.pathname) && (
+                                        <Button
+                                            variant="outline-primary"
+                                            size="sm"
+                                            onClick={() => setShowSettingsModal(true)}
+                                            className="d-flex align-items-center w-100 justify-content-center justify-content-lg-start"
+                                        >
+                                            <span className="text-truncate" style={{ maxWidth: '250px' }}>
+                                                {appData.selections.source_id && appData.selections.version_id ? (
+                                                    <>
+                                                        {dbData.sources[appData.selections.source_id]?.name || 'Unknown Source'} (
+                                                        {dbData.sources[appData.selections.source_id]?.versions?.[appData.selections.version_id]?.version_name || 'Unknown Version'})
+                                                    </>
+                                                ) : (
+                                                    'Configure Genome Settings'
+                                                )}
+                                            </span>
+                                        </Button>
+                                    )}
+                                </div>
+
+                                <Nav.Link
+                                    href="https://ccb.jhu.edu/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-0 text-center text-lg-end mt-2 mt-lg-0"
+                                >
+                                    <img src={ccb_logo} alt="CCB" className="ccb-logo" />
+                                </Nav.Link>
                             </div>
-
-                            {/* CCB logo - always in the same position */}
-                            <Nav.Link
-                                href="https://ccb.jhu.edu/" 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="d-none d-md-block ccb-link p-0"
-                            >
-                                <img src={ccb_logo} alt="CCB" className="ccb-logo" />
-                            </Nav.Link>
-                        </div>
+                        </Navbar.Collapse>
                     </Container>
                 </Navbar>
 
@@ -178,9 +189,9 @@ const Header: React.FC = () => {
                     </Card.Body>
                 )}
             </Card>
-            
+
             {/* App Settings Modal */}
-            <AppSettingsModal 
+            <AppSettingsModal
                 show={showSettingsModal}
                 canClose={true}
                 onClose={() => setShowSettingsModal(false)}

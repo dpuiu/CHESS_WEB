@@ -107,7 +107,7 @@ def db_list():
                     "name": table_name,
                     "type": "table", 
                     "description": "",
-                    "error": str(e)
+                    "message": str(e)
                 }
                 tables_info.append(table_info)
         
@@ -123,7 +123,7 @@ def db_list():
                     "name": view_name,
                     "type": "view",
                     "description": "",
-                    "error": str(e)
+                    "message": str(e)
                 }
                 views_info.append(view_info)
         
@@ -136,7 +136,7 @@ def db_list():
         })
         
     except Exception as e:
-        return jsonify({"success": False, "error": f"Failed to get database list: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"Failed to get database list: {str(e)}"}), 500
 
 @admin_bp.route('/db_table_data/<table_name>', methods=['GET'])
 def db_table_data(table_name):
@@ -162,7 +162,7 @@ def db_table_data(table_name):
         all_views = db_admin.list_views()
         
         if table_name not in all_tables and table_name not in all_views:
-            return jsonify({"success": False, "error": f"Table or view '{table_name}' not found"}), 404
+            return jsonify({"success": False, "message": f"Table or view '{table_name}' not found"}), 404
         
         # Get table data
         table_data = db_admin.get_table_preview(table_name, limit=limit, search_term=search_term)
@@ -176,7 +176,7 @@ def db_table_data(table_name):
         })
         
     except Exception as e:
-        return jsonify({"success": False, "error": f"Failed to get table data: {str(e)}"}), 500
+        return jsonify({"success": False, "message": f"Failed to get table data: {str(e)}"}), 500
 
 @admin_bp.route('/reset_db', methods=['POST'])
 def reset_db():
@@ -875,7 +875,7 @@ def delete_data_type():
 
 
 @admin_bp.route('/datasets', methods=['POST'])
-@validate_content_length(max_size_mb=1000)
+@validate_content_length(max_size_mb=102400)
 def create_dataset():
     """
     Create a new dataset with TSV file upload.

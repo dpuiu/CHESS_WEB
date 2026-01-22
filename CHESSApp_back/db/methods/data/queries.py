@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from db.db import db
+from db.db import db, to_absolute_path
 from db.methods.utils import *
 from db.methods.data.utils import *
 from db.methods.genomes.queries import get_fasta_file, sequence_id_to_name
@@ -320,21 +320,18 @@ def get_pdb_file(td_id):
             JOIN dataset ON transcript_data.dataset_id = dataset.dataset_id
             WHERE td_id = :td_id and data_type = 'pdb'
         """), {"td_id": td_id}).fetchone()
+        
         if not result:
             raise Exception(f"No pdb file found for td_id {td_id}")
             
-        file_path = result.data
-
-        directory_path = os.path.dirname(file_path)
-        file_name = os.path.basename(file_path)
-
-
+        url = result.data.strip()
+        
         return {
-            "file_path": directory_path,
-            "file_name": file_name,
+            "url": url,
+            "file_name": url.split('/')[-1]
         }
     except Exception as e:
-        return None
+        raise e
 
 def get_full_transcript_data(tid, transcript_id, assembly_id, nomenclature):
     try:
