@@ -333,7 +333,7 @@ def get_pdb_file(td_id):
     except Exception as e:
         raise e
 
-def get_full_transcript_data(tid, transcript_id, assembly_id, nomenclature):
+def get_full_transcript_data(tid, transcript_id, sva_id, assembly_id, nomenclature):
     try:
         # Get basic transcript info
         transcript_base = db.session.execute(text("""
@@ -349,8 +349,8 @@ def get_full_transcript_data(tid, transcript_id, assembly_id, nomenclature):
             SELECT txd.transcript_id, txd.start, txd.end, txd.type_value as transcript_type,
                    txd.cds_start, txd.cds_end, txd.score, txd.sva_id
             FROM tx_dbxref txd
-            WHERE txd.tid = :tid AND txd.transcript_id = :transcript_id
-        """), {"tid": tid, "transcript_id": transcript_id}).fetchone()
+            WHERE txd.tid = :tid AND txd.transcript_id = :transcript_id AND txd.sva_id = :sva_id
+        """), {"tid": tid, "transcript_id": transcript_id, "sva_id": sva_id}).fetchone()
         if not tx_dbxref:
             return {"success": False, "message": "Transcript ID not found for this transcript"}
 

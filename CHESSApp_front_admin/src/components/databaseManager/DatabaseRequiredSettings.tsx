@@ -108,7 +108,7 @@ export const DatabaseRequiredSettings: React.FC<DatabaseRequiredSettingsProps> =
             />
             <Form.Text className="text-muted">
               Please enter the absolute path to the data directory where CHESS data files are stored.
-              This method will first remove anything at the mew data directory path and move any existing CHESS data from the previous configuration to this new path and update the schema accordingly.
+              This method will first remove anything at the new data directory path and move any existing CHESS data from the previous configuration to this new path and update the schema accordingly.
             </Form.Text>
           </Form.Group>
 

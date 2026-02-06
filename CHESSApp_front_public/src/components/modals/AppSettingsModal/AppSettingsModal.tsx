@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Row, Col, Badge, Alert, Table, Modal } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { Organism, Assembly, Source, SourceVersion } from '../../../types/dbTypes';
-import { useDbData } from '../../../hooks';
+import { useDbData, useAppData } from '../../../hooks';
 import SelectionCard from './SelectionCard';
 
 import { usePathManager } from '../../../hooks/usePathManager';
@@ -24,7 +24,7 @@ interface AppSettingsModalProps {
 
 const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = true, onClose }) => {
   const navigate = useNavigate();
-  
+
   const [currentStep, setCurrentStep] = useState<SelectionStep>('organism');
   const [tempSelections, setTempSelections] = useState<TempSelections>({});
 
@@ -34,6 +34,17 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
 
   const steps: SelectionStep[] = ['organism', 'assembly', 'nomenclature', 'source', 'version'];
 
+  const dbDataHook = useDbData();
+  const appDataHook = useAppData();
+
+  const {
+    getAllOrganisms,
+    getAllAssembliesForOrganism_byID,
+    getAllSourcesForAssembly,
+    getAllVersionsForSourceAssembly,
+    getSequenceNamesForAssemblyNomenclature
+  } = dbDataHook;
+
   // Reset modal state
   const resetModal = () => {
     setCurrentStep('organism');
@@ -42,41 +53,79 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
 
   const handleClose = () => {
     if (canClose) {
-      resetModal();
       if (onClose) {
         onClose();
       }
     }
   };
 
+  // Initialize state when modal opens
   useEffect(() => {
-    resetModal();
-  }, []);
+    if (show) {
+      const selections = appDataHook.getAppData().selections;
 
-  // Close modal when URL changes (after successful navigation)
-  useEffect(() => {
-    if (show && !canClose) {
-      if (onClose) {
-        onClose();
+      // Strict check: ALL fields must be set to valid values to pre-populate
+      const isConfigured =
+        selections.organism_id !== -1 &&
+        selections.assembly_id !== -1 &&
+        selections.nomenclature &&
+        selections.source_id !== -1 &&
+        selections.version_id !== -1;
+
+      if (isConfigured) {
+        try {
+          const newSelections: TempSelections = {};
+
+          // 1. Organism
+          const organisms = getAllOrganisms();
+          const organism = organisms.find(o => o.taxonomy_id === selections.organism_id);
+          if (organism) newSelections.organism = organism;
+
+          // 2. Assembly
+          if (newSelections.organism) {
+            const assemblies = getAllAssembliesForOrganism_byID(newSelections.organism.taxonomy_id);
+            const assembly = assemblies.find(a => a.assembly_id === selections.assembly_id);
+            if (assembly) newSelections.assembly = assembly;
+          }
+
+          // 3. Nomenclature
+          if (newSelections.assembly) {
+            newSelections.nomenclature = selections.nomenclature ?? undefined;
+          }
+
+          // 4. Source
+          if (newSelections.assembly) {
+            const sources = getAllSourcesForAssembly(newSelections.assembly);
+            const source = sources.find(s => s.source_id === selections.source_id);
+            if (source) newSelections.source = source;
+          }
+
+          // 5. Version
+          if (newSelections.source && newSelections.assembly) {
+            const versions = getAllVersionsForSourceAssembly(newSelections.source, newSelections.assembly);
+            const version = versions.find(v => v.sv_id === selections.version_id);
+            if (version) newSelections.version = version;
+          }
+
+          setTempSelections(newSelections);
+          setCurrentStep('version');
+        } catch (e) {
+          console.error("Error initializing settings modal:", e);
+          resetModal();
+        }
+      } else {
+        // Any missing setting => start from scratch
+        resetModal();
       }
     }
-  }, [show, canClose, onClose]);
-
-  const dbDataHook = useDbData();
-  const { 
-    getAllOrganisms, 
-    getAllAssembliesForOrganism_byID, 
-    getAllSourcesForAssembly, 
-    getAllVersionsForSourceAssembly, 
-    getSequenceNamesForAssemblyNomenclature 
-  } = dbDataHook;
+  }, [show]);
 
   // Selection handlers
   const handleSelection = (step: SelectionStep, value: any) => {
     const newSelections = { ...tempSelections, [step]: value };
-    
+
     setTempSelections(newSelections);
-    
+
     // Auto-advance to next step
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
@@ -86,19 +135,6 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
 
   // Navigation
   const canProceed = () => !!tempSelections[currentStep as keyof TempSelections];
-  
-  const handleBack = () => {
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1]);
-      // Clear selections from current step onwards
-      const newSelections = { ...tempSelections };
-      steps.slice(currentIndex).forEach(step => {
-        delete newSelections[step as keyof TempSelections];
-      });
-      setTempSelections(newSelections);
-    }
-  };
 
   const handleConfirmSelection = () => {
     const { organism, assembly, source, version, nomenclature } = tempSelections;
@@ -113,23 +149,28 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
     }
   };
 
+  const handleStepClick = (step: SelectionStep) => {
+    setCurrentStep(step);
+  };
+
   // Breadcrumb
   const renderBreadcrumb = () => (
     <div className="mb-4">
       <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
         {steps.map((step, index) => (
           <React.Fragment key={step}>
-            <Badge 
+            <Badge
               bg={currentStep === step ? 'primary' : (tempSelections[step as keyof TempSelections] ? 'success' : 'secondary')}
               className="text-capitalize px-3 py-2"
-              style={{ fontSize: '0.875rem' }}
+              style={{ fontSize: '0.875rem', cursor: 'pointer' }}
+              onClick={() => handleStepClick(step)}
             >
-              {index + 1}. {step}{tempSelections[step as keyof TempSelections] ? 
+              {index + 1}. {step}{tempSelections[step as keyof TempSelections] ?
                 `: ${step === 'organism' ? tempSelections.organism?.common_name :
-                 step === 'assembly' ? tempSelections.assembly?.assembly_name :
-                 step === 'nomenclature' ? tempSelections.nomenclature :
-                 step === 'source' ? tempSelections.source?.name :
-                 step === 'version' ? tempSelections.version?.version_name : ''}` : 
+                  step === 'assembly' ? tempSelections.assembly?.assembly_name :
+                    step === 'nomenclature' ? tempSelections.nomenclature :
+                      step === 'source' ? tempSelections.source?.name :
+                        step === 'version' ? tempSelections.version?.version_name : ''}` :
                 ''}
             </Badge>
             {index < steps.length - 1 && <span className="mx-2 text-muted">→</span>}
@@ -146,10 +187,10 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
           <Row>
             {getAllOrganisms().map(organism => (
               <Col md={6} key={organism.taxonomy_id} className="mb-3">
-                <SelectionCard 
-                  title={organism.common_name} 
+                <SelectionCard
+                  title={organism.common_name}
                   isSelected={tempSelections.organism?.taxonomy_id === organism.taxonomy_id}
-                  onClick={() => handleSelection('organism', organism)} 
+                  onClick={() => handleSelection('organism', organism)}
                 />
               </Col>
             ))}
@@ -161,11 +202,11 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
           <Row>
             {getAllAssembliesForOrganism_byID(tempSelections.organism.taxonomy_id).map(assembly => (
               <Col md={6} key={assembly.assembly_id} className="mb-3">
-                <SelectionCard 
-                  title={assembly.assembly_name} 
+                <SelectionCard
+                  title={assembly.assembly_name}
                   subtitle={assembly.information}
                   isSelected={tempSelections.assembly?.assembly_id === assembly.assembly_id}
-                  onClick={() => handleSelection('assembly', assembly)} 
+                  onClick={() => handleSelection('assembly', assembly)}
                 />
               </Col>
             ))}
@@ -174,7 +215,7 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
       case 'nomenclature':
         if (!tempSelections.assembly) return null;
         const assembly = tempSelections.assembly as Assembly;
-        
+
         if (!assembly.nomenclatures?.length) {
           return <Alert variant="info">This assembly has no nomenclatures available.</Alert>;
         }
@@ -193,9 +234,9 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
                 {assembly.nomenclatures.map(nomenclature => {
                   const examples = getSequenceNamesForAssemblyNomenclature(assembly, nomenclature);
                   const isSelected = tempSelections.nomenclature === nomenclature;
-                  
+
                   return (
-                    <tr 
+                    <tr
                       key={nomenclature}
                       className={isSelected ? 'table-primary' : ''}
                       onClick={() => handleSelection('nomenclature', nomenclature)}
@@ -228,11 +269,11 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
           <Row>
             {getAllSourcesForAssembly(tempSelections.assembly).map((source: Source) => (
               <Col md={6} key={source.source_id} className="mb-3">
-                <SelectionCard 
-                  title={source.name} 
+                <SelectionCard
+                  title={source.name}
                   subtitle={source.information}
                   isSelected={tempSelections.source?.source_id === source.source_id}
-                  onClick={() => handleSelection('source', source)} 
+                  onClick={() => handleSelection('source', source)}
                 />
               </Col>
             ))}
@@ -244,11 +285,11 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
           <Row>
             {getAllVersionsForSourceAssembly(tempSelections.source, tempSelections.assembly).map((version: SourceVersion) => (
               <Col md={6} key={version.sv_id} className="mb-3">
-                <SelectionCard 
-                  title={version.version_name} 
+                <SelectionCard
+                  title={version.version_name}
                   subtitle={`Rank: ${version.version_rank}`}
                   isSelected={tempSelections.version?.sv_id === version.sv_id}
-                  onClick={() => handleSelection('version', version)} 
+                  onClick={() => handleSelection('version', version)}
                 />
               </Col>
             ))}
@@ -260,10 +301,10 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
   };
 
   return (
-    <Modal 
-      show={show} 
-      onHide={handleClose} 
-      centered 
+    <Modal
+      show={show}
+      onHide={handleClose}
+      centered
       size="lg"
       backdrop={canClose ? true : 'static'}
       keyboard={canClose}
@@ -276,17 +317,9 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
         {renderStepContent()}
       </Modal.Body>
       <Modal.Footer className="border-top">
-        <Button 
-          variant="outline-secondary" 
-          onClick={handleBack}
-          disabled={currentStep === 'organism'}
-          size="sm"
-        >
-          ← Back
-        </Button>
         {currentStep === 'version' && (
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={handleConfirmSelection}
             disabled={!canProceed()}
             size="sm"

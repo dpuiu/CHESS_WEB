@@ -12,7 +12,7 @@ import DatasetDisplay from './components/DatasetDisplay';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../../redux/store';
 
-import { 
+import {
   useDbData,
   useAppData,
   useGeneDetails,
@@ -20,10 +20,10 @@ import {
 } from '../../hooks';
 
 import { fetchGeneByGid, clearGeneData } from '../../redux/gene';
-import { 
+import {
   clearPrimaryTranscriptData,
   clearSecondaryTranscriptData,
- } from '../../redux/gene/cmpTranscriptSlice';
+} from '../../redux/gene/cmpTranscriptSlice';
 import { fetchTranscriptData } from '../../redux/gene/cmpTranscriptThunks';
 import { pathManager } from '../../utils/pathManager';
 
@@ -62,7 +62,7 @@ const Gene: React.FC = () => {
         dispatch(fetchGeneByGid(numericGid));
       }
     }
-    
+
     // Cleanup when component unmounts
     return () => {
       dispatch(clearGeneData());
@@ -73,10 +73,12 @@ const Gene: React.FC = () => {
 
   // Handle transcript selection
   const handlePrimaryTranscriptClick = (transcript: Transcript | null) => {
-    if (transcript && appData.selections.assembly_id && appData.selections.nomenclature) {
+    const sva_id = geneDetails?.geneData?.sva_id;
+    if (transcript && appData.selections.assembly_id && appData.selections.nomenclature && sva_id) {
       dispatch(fetchTranscriptData({
         tid: transcript.tid,
         transcript_id: transcript.transcript_id,
+        sva_id: sva_id,
         assembly_id: appData.selections.assembly_id,
         nomenclature: appData.selections.nomenclature
       }));
@@ -85,14 +87,16 @@ const Gene: React.FC = () => {
     else {
       setSelectedPrimaryTranscript(null);
     }
-    
+
   };
 
   const handleSecondaryTranscriptClick = (transcript: Transcript | null) => {
-    if (transcript && appData.selections.assembly_id && appData.selections.nomenclature) {
+    const sva_id = geneDetails?.geneData?.sva_id;
+    if (transcript && appData.selections.assembly_id && appData.selections.nomenclature && sva_id) {
       dispatch(fetchTranscriptData({
         tid: transcript.tid,
         transcript_id: transcript.transcript_id,
+        sva_id: sva_id,
         assembly_id: appData.selections.assembly_id,
         nomenclature: appData.selections.nomenclature,
         isSecondary: true
@@ -174,7 +178,7 @@ const Gene: React.FC = () => {
                       </a>
                     </div>
                   )}
-                  
+
                   {/* Sequence Section - Only show if sequence data exists */}
                   {(primaryTranscriptDetails?.nt_sequence || primaryTranscriptDetails?.cds_sequence || primaryTranscriptDetails?.cds_aa_sequence) && (
                     <div className="quicklink-item mb-3">
@@ -185,33 +189,33 @@ const Gene: React.FC = () => {
                     </div>
                   )}
                   {/* Available Datasets Section - Only show if datasets exist */}
-                  {((primaryTranscriptDetails?.datasets && Array.isArray(primaryTranscriptDetails.datasets) && primaryTranscriptDetails.datasets.length > 0) || 
+                  {((primaryTranscriptDetails?.datasets && Array.isArray(primaryTranscriptDetails.datasets) && primaryTranscriptDetails.datasets.length > 0) ||
                     (selectedPrimaryTranscript?.datasets && Array.isArray(selectedPrimaryTranscript.datasets) && selectedPrimaryTranscript.datasets.length > 0)) && (
-                    <>
-                      <div className="quicklink-item mb-3">
-                        <a href="#available-datasets" className="quicklink-link">
-                          <i className="bi bi-database me-2"></i>
-                          Available Datasets
-                        </a>
-                      </div>
-                      
-                      {/* Individual Dataset Quicklinks */}
-                      <div className="quicklink-item mb-2">
-                        <h6 className="text-muted mb-2 small">Quick Access to Datasets:</h6>
-                      </div>
-                      {(primaryTranscriptDetails?.datasets || selectedPrimaryTranscript?.datasets || []).map((dataset: any, index: number) => (
-                        <div key={index} className="quicklink-item mb-2">
-                          <a href={`#primary-dataset-${index}`} className="quicklink-link dataset-link">
-                            <i className='bi-database me-2'></i>
-                            <span className="small">
-                              {dataset?.dataset_name || `Dataset ${index + 1}`}
-                            </span>
+                      <>
+                        <div className="quicklink-item mb-3">
+                          <a href="#available-datasets" className="quicklink-link">
+                            <i className="bi bi-database me-2"></i>
+                            Available Datasets
                           </a>
                         </div>
-                      ))}
-                    </>
-                  )}
-                  
+
+                        {/* Individual Dataset Quicklinks */}
+                        <div className="quicklink-item mb-2">
+                          <h6 className="text-muted mb-2 small">Quick Access to Datasets:</h6>
+                        </div>
+                        {(primaryTranscriptDetails?.datasets || selectedPrimaryTranscript?.datasets || []).map((dataset: any, index: number) => (
+                          <div key={index} className="quicklink-item mb-2">
+                            <a href={`#primary-dataset-${index}`} className="quicklink-link dataset-link">
+                              <i className='bi-database me-2'></i>
+                              <span className="small">
+                                {dataset?.dataset_name || `Dataset ${index + 1}`}
+                              </span>
+                            </a>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
                   {/* Transcript Loading Indicator */}
                   {(cmpTranscriptHook.primaryLoading || cmpTranscriptHook.secondaryLoading) && (
                     <div className="quicklink-item mb-2">
@@ -225,11 +229,11 @@ const Gene: React.FC = () => {
               )}
 
               <hr className="my-4" />
-              
+
               {/* disable view in browser if geneCoordinates is null */}
               {geneCoordinates && (
                 <div className="quicklink-item mb-3">
-                  <button 
+                  <button
                     className="btn btn-primary btn-sm w-100"
                     onClick={() => {
                       handleViewInBrowser(geneCoordinates);
@@ -242,7 +246,7 @@ const Gene: React.FC = () => {
               )}
               {/* Back to Top Button */}
               <div className="quicklink-item mb-3">
-                <button 
+                <button
                   className="btn btn-outline-secondary btn-sm w-100 back-to-top-btn"
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -329,11 +333,11 @@ const Gene: React.FC = () => {
                         <Card.Body>
                           {/* Attributes */}
                           {primaryTranscriptDetails && !cmpTranscriptHook.primaryLoading && !cmpTranscriptHook.primaryError && (
-                            <AttributeDisplay 
-                                transcriptData={primaryTranscriptDetails}
-                                onAttributeHover={setHoveredPrimaryAttribute}
-                                hoveredAttribute={hoveredSecondaryAttribute}
-                                layout={isDualTranscriptMode ? 'multicolumn' : 'single'}
+                            <AttributeDisplay
+                              transcriptData={primaryTranscriptDetails}
+                              onAttributeHover={setHoveredPrimaryAttribute}
+                              hoveredAttribute={hoveredSecondaryAttribute}
+                              layout={isDualTranscriptMode ? 'multicolumn' : 'single'}
                             />
                           )}
                         </Card.Body>
@@ -348,11 +352,11 @@ const Gene: React.FC = () => {
                           </Card.Header>
                           <Card.Body>
                             {secondaryTranscriptDetails && !cmpTranscriptHook.secondaryLoading && !cmpTranscriptHook.secondaryError && (
-                              <AttributeDisplay 
-                                  transcriptData={secondaryTranscriptDetails}
-                                  onAttributeHover={setHoveredSecondaryAttribute}
-                                  hoveredAttribute={hoveredPrimaryAttribute}
-                                  layout={isDualTranscriptMode ? 'multicolumn' : 'single'}
+                              <AttributeDisplay
+                                transcriptData={secondaryTranscriptDetails}
+                                onAttributeHover={setHoveredSecondaryAttribute}
+                                hoveredAttribute={hoveredPrimaryAttribute}
+                                layout={isDualTranscriptMode ? 'multicolumn' : 'single'}
                               />
                             )}
                           </Card.Body>
@@ -361,7 +365,7 @@ const Gene: React.FC = () => {
                     )}
                   </Row>
                 )}
-                
+
                 {/* Sequence Display - Only show if sequence data exists */}
                 {(primaryTranscriptDetails?.nt_sequence || primaryTranscriptDetails?.cds_sequence || primaryTranscriptDetails?.cds_aa_sequence) && (
                   <Row id="sequence-display">
@@ -393,20 +397,20 @@ const Gene: React.FC = () => {
                 )}
 
                 {/* Dataset Display - Only show if datasets exist */}
-                {((primaryTranscriptDetails?.datasets && Array.isArray(primaryTranscriptDetails.datasets) && primaryTranscriptDetails.datasets.length > 0) || 
+                {((primaryTranscriptDetails?.datasets && Array.isArray(primaryTranscriptDetails.datasets) && primaryTranscriptDetails.datasets.length > 0) ||
                   (selectedPrimaryTranscript?.datasets && Array.isArray(selectedPrimaryTranscript.datasets) && selectedPrimaryTranscript.datasets.length > 0)) && (
-                  <Row id="available-datasets">
-                    <h4 className="mb-3 fw-bold text-muted">
-                      <i className="bi bi-database me-2"></i>
-                      Available Datasets
-                    </h4>
-                    <DatasetDisplay 
-                      primaryTranscriptDetails={primaryTranscriptDetails} 
-                      secondaryTranscriptDetails={secondaryTranscriptDetails} 
-                      isSecondaryModeEnabled={!!selectedSecondaryTranscript}
-                    />
-                  </Row>
-                )}
+                    <Row id="available-datasets">
+                      <h4 className="mb-3 fw-bold text-muted">
+                        <i className="bi bi-database me-2"></i>
+                        Available Datasets
+                      </h4>
+                      <DatasetDisplay
+                        primaryTranscriptDetails={primaryTranscriptDetails}
+                        secondaryTranscriptDetails={secondaryTranscriptDetails}
+                        isSecondaryModeEnabled={!!selectedSecondaryTranscript}
+                      />
+                    </Row>
+                  )}
               </Col>
             </Row>
           )}

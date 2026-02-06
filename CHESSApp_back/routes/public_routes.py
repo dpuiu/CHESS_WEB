@@ -434,13 +434,14 @@ def get_transcript_data():
     try:
         tid = request.args.get('tid', type=int)
         transcript_id = request.args.get('transcript_id', type=str)
+        sva_id = request.args.get('sva_id', type=int)
         assembly_id = request.args.get('assembly_id', type=int)
         nomenclature = request.args.get('nomenclature', type=str)
 
-        if not tid or not transcript_id or not assembly_id or not nomenclature:
-            return jsonify({"success": False, "message": "Missing required arguments: tid, transcript_id, assembly_id, and nomenclature"}), 400
+        if not tid or not transcript_id or not sva_id or not assembly_id or not nomenclature:
+            return jsonify({"success": False, "message": "Missing required arguments: tid, transcript_id, sva_id, assembly_id, and nomenclature"}), 400
 
-        result = get_full_transcript_data(tid, transcript_id, assembly_id, nomenclature)
+        result = get_full_transcript_data(tid, transcript_id, sva_id, assembly_id, nomenclature)
         return jsonify(result), 200 if result["success"] else 404
         
     except Exception as e:
