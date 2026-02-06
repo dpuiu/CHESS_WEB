@@ -91,6 +91,7 @@ const AppSettingsModal: React.FC<AppSettingsModalProps> = ({ show, canClose = tr
           // 3. Nomenclature
           if (newSelections.assembly) {
             newSelections.nomenclature = selections.nomenclature ?? undefined;
+            newSelections.nomenclature = selections.nomenclature ?? undefined;
           }
 
           // 4. Source
