@@ -1,0 +1,94 @@
+#version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      CHESSDB_NAME: ${CHESSDB_NAME}
+      CHESSDB_ADMIN_USER: ${CHESSDB_ADMIN_USER}
+      CHESSDB_ADMIN_PASS: ${CHESSDB_ADMIN_PASS}
+      CHESSDB_PUBLIC_USER: ${CHESSDB_PUBLIC_USER}
+      CHESSDB_PUBLIC_PASS: ${CHESSDB_PUBLIC_PASS}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - ./my_custom.cnf:/etc/mysql/conf.d/my_custom.cnf
+      - mysql_data:/var/lib/mysql
+      - ./db_init.sh:/docker-entrypoint-initdb.d/db_init_1.sh:ro
+      - ./CHESSApp_DB/chess.db.schema.mysql.sql:/docker-entrypoint-initdb.d/db_init_2.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  backend_admin:
+    image: dpuiu2/chess_web-backend:latest
+    command: ["/opt/venv/bin/gunicorn", "-w", "1", "-b", "0.0.0.0:5001", "--access-logfile", "-", "--error-logfile", "-", "app_admin:app"]
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      CHESSDB_HOST: mysql
+      CHESSDB_NAME: ${CHESSDB_NAME}
+      CHESSDB_USER: ${CHESSDB_ADMIN_USER}
+      CHESSDB_PASS: ${CHESSDB_ADMIN_PASS}
+      FLASK_DEBUG: 0
+      FLASK_ADMIN_PORT: ${FLASK_ADMIN_PORT}
+      FRONTEND_ADMIN_PORT: ${FRONTEND_ADMIN_PORT}
+      CORS_ALLOWED_ORIGINS:  http://localhost:${FRONTEND_ADMIN_PORT}
+    ports:
+      - "${FLASK_ADMIN_PORT}:5001"
+    volumes:
+      - ./CHESS_WEB:/CHESS_WEB
+
+  frontend_admin:
+    image: dpuiu2/chess_web-frontend_admin:latest
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5112"]
+    restart: unless-stopped
+    environment:
+      FRONTEND_ADMIN_PORT: ${FRONTEND_ADMIN_PORT}
+      FLASK_ADMIN_PORT: ${FLASK_ADMIN_PORT}
+      VITE_API_BASE_URL: http://localhost:${FLASK_ADMIN_PORT}/api
+    ports:
+      - "${FRONTEND_ADMIN_PORT}:5112"
+    volumes:
+      - ./CHESS_WEB:/CHESS_WEB
+
+  frontend_public:
+    image: dpuiu2/chess_web-frontend_public:latest
+    restart: "no"
+    volumes:
+      - ./CHESS_WEB:/CHESS_WEB
+      - frontend_dist:/app/dist
+
+  backend_public:
+    image: dpuiu2/chess_web-backend:latest
+    command: ["/opt/venv/bin/gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      frontend_public:
+        condition: service_completed_successfully
+    environment:
+      CHESSDB_HOST: mysql
+      CHESSDB_NAME: ${CHESSDB_NAME}
+      CHESSDB_USER: ${CHESSDB_PUBLIC_USER}
+      CHESSDB_PASS: ${CHESSDB_PUBLIC_PASS}
+      FLASK_DEBUG: 0
+      FLASK_PUBLIC_PORT: ${FLASK_PUBLIC_PORT}
+      CHESS_FRONTEND_DIST: /app/dist
+    ports:
+      - "${FLASK_PUBLIC_PORT}:5000"
+    volumes:
+      - ./CHESS_WEB:/CHESS_WEB
+      - frontend_dist:/app/dist
+
+volumes:
+  mysql_data:
+  frontend_dist:

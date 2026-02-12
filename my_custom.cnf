@@ -1,0 +1,10 @@
+[mysqld]
+log_bin_trust_function_creators=1
+
+# Increase redo log capacity for large imports
+innodb_redo_log_capacity = 2G
+
+# Optional: faster bulk restore settings (use carefully)
+innodb_flush_log_at_trx_commit = 2
+sync_binlog = 0
+innodb_doublewrite = 0
