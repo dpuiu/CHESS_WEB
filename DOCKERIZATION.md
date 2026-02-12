@@ -28,50 +28,26 @@
 
 ## 1.4 Other Files (separate download)
 
-- Docker images  
-  [https://hub.docker.com](https://hub.docker.com/repositories/dpuiu2)
+- Docker images: [https://hub.docker.com](https://hub.docker.com/repositories/dpuiu2)
+- CHESS database copy: [ftp.ccb.jhu.edu](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) ; tar.gz files, ~7G
+- buckets
 
-- CHESS database copy 
-  [ftp.ccb.jhu.edu](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB)
-  tar.gz files, 7G
-
-# 2. Docker Compose Services and Volumes
-
-## 2.1 Services
-
-### 2.1.1 Production (4)
+# 2. Docker Compose Services
 
 - `mysql`  
 - `backend_admin`  
 - `frontend_admin`  
 - `public`  
 
-### 2.1.2 Development (5)
+# 3. Docker Compose Volumes
 
-- `mysql`  
-- `backend_admin`  
-- `frontend_admin`  
-- `backend_public`  
-- `frontend_public`  
-
-## 2.2 Volumes
-
-### 2.2.1 Production
-
-2 Volumes
 - `mysql_data`  
 - `./CHESS_WEB`   : bind-mount database backup and genome files
-
-### 2.2.2 Development
-
-1 Volume
-- `mysql_data`  
 
 # 3. CHESS Database
 
 ## 3.1 Download Copies
 
-Test vs All
 ```bash
 wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_dev_backups.tgz
 wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.tgz
@@ -87,8 +63,6 @@ du -hs *
 
 ## 3.3 Extract Archives 
 
-To ./CHESS_WEB/ directory which will map to /CHESS_WEB !!!
-
 ```bash
 tar -xzvf CHESSApp_dev_backups.tgz
 tar -xzvf CHESSApp_prod_backups.tgz
@@ -101,6 +75,8 @@ tree -L 2 ./CHESS_WEB/
 └── CHESSApp_prod_backups
     └── backup_2026-01-22_13-42-15
 ```
+
+The ./CHESS_WEB directory which will map to /CHESS_WEB volume !!!
 
 # 4. Docker Commands
 
@@ -118,16 +94,11 @@ docker compose build -f docker-compose.yml --no-cache --parallel
 ```bash
 docker compose up  
 docker compose up -p chess_web -f docker-compose.yml --env-file .env -d
-```
-
-## 4.2 Start Select Containers
-
-```bash
 docker compose up mysql backend_admin frontend_admin
 docker compose up mysql public
 ```
 
-## 4.3 Check Images & Running Containers
+## 4.3 Check Images
 
 ```bash
 docker images                                                                                                                                                                           >
@@ -136,7 +107,11 @@ docker images                                                                   
   dpuiu2/chess_web-frontend_admin:latest   615b5b222119        605MB             0B    U   
   dpuiu2/chess_web-public:latest           d1188e0758ea        967MB             0B    U   
   mysql:8.0                                272f5b15e83b        786MB             0B    U   
+```
 
+## 4.3 Check Running Containers
+
+```bash
 docker ps --no-trunc | cut -c68-
   IMAGE                                    COMMAND                                                                      CREATED          STATUS                   PORTS                   >
   dpuiu2/chess_web-public:latest           "/opt/venv/bin/gunicorn -w 4 -b 0.0.0.0:5000 --timeout 600 app_public:app"   17 minutes ago   Up 6 minutes             0.0.0.0:5000->5000/tcp, >
