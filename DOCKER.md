@@ -8,45 +8,42 @@
 
 ## 1.1 Docker Compose YAML Files
 
--   `docker-compose.yml` : Main file; production code\
--   `docker-compose.dev.*.yml` : Additional development/production setups
+-   `docker-compose.yml` : Main file; production code  
+-   `docker-compose.dev.*.yml` : Additional development/production setups  
 
 ## 1.2 Dockerfiles
 
--   `CHESSApp_back/Dockerfile` : Backend\
--   `CHESSApp_front_admin/Dockerfile` : Admin frontend\
--   `Dockerfile.public` : Public frontend + backend\
+-   `CHESSApp_back/Dockerfile` : Backend  
+-   `CHESSApp_front_admin/Dockerfile` : Admin frontend  
+-   `Dockerfile.public` : Public frontend + backend  
 -   `CHESSApp_front_public/Dockerfile` : Public frontend (outdated)
 
 ## 1.3 Other Files (included)
 
--   `.env` : Contains MySQL users, passwords, and service ports\
--   `my_custom.cnf` : MySQL (mysqld) configuration\
--   `db_init.sh` : Creates the MySQL database & users and sets
-    permissions\
--   `CHESSApp_DB/chess.db.schema.mysql.sql`: Creates the MySQL database
-    tables
+-   `.env` : Contains MySQL users, passwords, and service ports  
+-   `my_custom.cnf` : MySQL (mysqld) configuration  
+-   `db_init.sh` : Creates the MySQL database & users and sets permissions  
+-   `CHESSApp_DB/chess.db.schema.mysql.sql`: Creates the MySQL database tables  
 
 ## 1.4 Other Files (separate download)
 
--   Docker images:
-    [https://hub.docker.com](https://hub.docker.com/repositories/dpuiu2)
--   CHESS database copy:
-    [ftp://ftp.ccb.jhu.edu](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) ;
-    tar.gz files, \~7G
+-   Docker images:  
+    [https://hub.docker.com](https://hub.docker.com/repositories/dpuiu2)  
+-   CHESS database copy:  
+    [ftp://ftp.ccb.jhu.edu](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) ; tar.gz files, ~7GB  
 -   Protein files available on
-    [isoform.io](https://storage.googleapis.com/isoform.io/pdb_v1.3/)
+    [isoform.io](https://storage.googleapis.com/isoform.io/pdb_v1.3/)  
 
 # 2. Docker Compose Services
 
--   `mysql`\
--   `backend_admin`\
--   `frontend_admin`\
+-   `mysql`
+-   `backend_admin`
+-   `frontend_admin`
 -   `public`
 
 # 3. Docker Compose Volumes
 
--   `mysql_data`\
+-   `mysql_data`
 -   `./CHESS_WEB` : bind-mount database backup and genome files
 
 # 3. CHESS Database
