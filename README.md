@@ -1,7 +1,11 @@
-# CHESS_WEB
+# CHESS Web Interface (Fork)
 
-Fork of Web interface for the CHESS annotation.  
-Original available at:
-  https://github.com/alevar/CHESS_WEB
+This repository contains a fork of the web interface for **CHESS annotation**.
 
-Dockerizatio
+## 🔗 Original Project
+The original project is available at:  
+https://github.com/alevar/CHESS_WEB
+
+## 🐳 Dockerization Instructions
+Dockerization instructions can be found here:  
+https://github.com/alevar/CHESS_WEB/DOCKERIZATION.md
