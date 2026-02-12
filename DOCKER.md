@@ -10,7 +10,7 @@
 ## 1.1 Docker Compose YAML Files
 
 - `docker-compose.yml` : Main file; production code  
-- `docker-compose.dev.*.yml` : Additional development/production; builds   
+- `docker-compose.dev.*.yml` : Additional development/production setups  
 
 ## 1.2 Dockerfiles  
 
@@ -30,7 +30,7 @@
 
 - Docker images: [https://hub.docker.com](https://hub.docker.com/repositories/dpuiu2)
 - CHESS database copy: [ftp.ccb.jhu.edu](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) ; tar.gz files, ~7G
-- buckets
+- Protein files available on [isoform.io](https://storage.googleapis.com/isoform.io/pdb_v1.3/)
 
 # 2. Docker Compose Services
 
@@ -49,29 +49,29 @@
 ## 3.1 Download Copies
 
 ```bash
-wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_dev_backups.tgz
 wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.tgz
+wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_dev_backups.tgz  # test
 ```
 
 ## 3.2 Check File Sizes
 
 ```bash
 du -hs *
-  96M   CHESSApp_dev_backups.tgz
   6.9G  CHESSApp_prod_backups.tgz
+  96M   CHESSApp_dev_backups.tgz  # test
 ```
 
 ## 3.3 Extract Archives 
 
 ```bash
-tar -xzvf CHESSApp_dev_backups.tgz
 tar -xzvf CHESSApp_prod_backups.tgz
+tar -xzvf CHESSApp_dev_backups.tgz  # test
 
 tree -L 2 ./CHESS_WEB/
 ./CHESS_WEB/
 ├── CHESSApp_data
-├── CHESSApp_dev_backups
-│   └── backup_2025-12-21_22-53-30
+├── CHESSApp_dev_backups            # test
+│   └── backup_2025-12-21_22-53-30  # test
 └── CHESSApp_prod_backups
     └── backup_2026-01-22_13-42-15
 ```
@@ -143,8 +143,9 @@ http://localhost:5112/
 ## 5.1 Restore Database Paths
 
 ```bash
-/CHESS_WEB/CHESSApp_prod_backups/backup_2026-01-22_13-42-15/ # all chr
-/CHESS_WEB/CHESSApp_dev_backups/backup_2025-12-21_22-53-30/  # chr21 (test)
+/CHESS_WEB/CHESSApp_prod_backups/backup_2026-01-22_13-42-15/ 
+/CHESS_WEB/CHESSApp_dev_backups/backup_2025-12-21_22-53-30/  # test
+  
 /CHESS_WEB/CHESSApp_data
 ```
 ## 5.2 Data Directory
