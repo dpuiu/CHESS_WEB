@@ -68,5 +68,11 @@ COPY ./CHESSApp_back/ .
 # Copy node dist dir
 #COPY --from=builder /apt/dist /apt/dist
 
+COPY public_init.sh .
+RUN chmod +x /app/public_init.sh
+
+CMD ["/app/public_init.sh"] 
+
 # ---- Expose Flask ports ----
-EXPOSE 5001
+EXPOSE 5000
+#EXPOSE 5001
