@@ -26,7 +26,7 @@ services:
       start_period: 15s
 
   backend_admin:
-    image: dpuiu2/chess_web-backend:latest
+    image: dpuiu2/chess_web-backend:1.0
     command: ["/opt/venv/bin/gunicorn", "-w", "1", "-b", "0.0.0.0:5001", "--access-logfile", "-", "--error-logfile", "-", "app_admin:app"]
     restart: unless-stopped
     depends_on:
@@ -47,7 +47,7 @@ services:
       - ./CHESS_WEB:/CHESS_WEB
 
   frontend_admin:
-    image: dpuiu2/chess_web-frontend_admin:latest
+    image: dpuiu2/chess_web-frontend_admin:1.0
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5112"]
     restart: unless-stopped
     environment:
@@ -60,14 +60,14 @@ services:
       - ./CHESS_WEB:/CHESS_WEB
 
   frontend_public:
-    image: dpuiu2/chess_web-frontend_public:latest
+    image: dpuiu2/chess_web-frontend_public:1.0
     restart: "no"
     volumes:
       - ./CHESS_WEB:/CHESS_WEB
       - frontend_dist:/app/dist
 
   backend_public:
-    image: dpuiu2/chess_web-backend:latest
+    image: dpuiu2/chess_web-backend:1.0
     command: ["/opt/venv/bin/gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
     restart: unless-stopped
     depends_on:

@@ -27,7 +27,7 @@ services:
       start_period: 15s
 
   backend_admin:
-#    image: dpuiu2/chess_web-backend:latest
+#    image: dpuiu2/chess_web-backend:1.0
     build:
       context: ./CHESSApp_back
       dockerfile: Dockerfile
@@ -52,7 +52,7 @@ services:
       - ./CHESS_WEB:/CHESS_WEB
 
   frontend_admin:
-    image: dpuiu2/chess_web-frontend_admin:latest
+    image: dpuiu2/chess_web-frontend_admin:1.0
 #    build:
 #      context: ./CHESSApp_front_admin
 #      dockerfile: Dockerfile
@@ -69,7 +69,7 @@ services:
       - ./CHESS_WEB:/CHESS_WEB
 
   frontend_public:
-    image: dpuiu2/chess_web-frontend_public:latest
+    image: dpuiu2/chess_web-frontend_public:1.0
 #    build:
 #      context: ./CHESSApp_front_public
 #      dockerfile: Dockerfile
@@ -98,7 +98,7 @@ services:
 #      start_period: 5s
 
   backend_public:
-    image: dpuiu2/chess_web-backend:latest
+    image: dpuiu2/chess_web-backend:1.0
 #    build:
 #      context: ./CHESSApp_back
 #      dockerfile: Dockerfile
