@@ -1,0 +1,50 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build and push Dockerfile2.mysql
+      - name: Build MySQL Docker image 2
+        run: |
+          docker build -f Dockerfile2.mysql -t ghcr.io/${{ github.repository_owner }}/chess_web-mysql:2.0 .
+      - name: Push MySQL Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/chess_web-mysql:2.0
+
+      # Build and push Dockerfile.public
+      - name: Build Public Docker image 1
+        run: |
+          docker build -f Dockerfile.public -t ghcr.io/${{ github.repository_owner }}/chess_web-public:1.0 .
+      - name: Push Public Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/chess_web-public:1.0
+
+
+      # Build and push Dockerfile2.public
+      - name: Build Public Docker image 2
+        run: |
+          docker build -f Dockerfile2.public -t ghcr.io/${{ github.repository_owner }}/chess_web-public:2.0 .
+      - name: Push Public Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/chess_web-public:2.0
+

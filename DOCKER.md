@@ -1,7 +1,7 @@
 # CHESS_WEB Multi-container Setup
 
 **Author:** Daniela Puiu\
-**Last Update:** 2026-03-11\
+**Last Update:** 2026-03-16\
 **Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)
 
 # 1. Files
