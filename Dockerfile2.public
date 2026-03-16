@@ -65,6 +65,17 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
 # ---- Copy application code ----
 COPY ./CHESSApp_back/ .
 
+# Copy node dist dir
+#COPY --from=builder /apt/dist /apt/dist
+
+#COPY public_init.sh .
+#RUN chmod +x /app/public_init.sh
+#CMD ["/app/public_init.sh"] 
+
+#:2.0
+RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz | tar -xz -C /tmp
+CMD ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
+
 # ---- Expose Flask ports ----
 EXPOSE 5000
-EXPOSE 5001
+#EXPOSE 5001

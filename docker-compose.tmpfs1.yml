@@ -2,7 +2,7 @@
 
 services:
 
-  mysql1:
+  mysql:
     image: mysql:8.0
     restart: unless-stopped
     environment:
@@ -27,7 +27,7 @@ services:
       retries: 5
       start_period: 15s
 
-  public1:
+  public:
     image: dpuiu2/chess_web-public:1.0
     restart: unless-stopped
     depends_on:

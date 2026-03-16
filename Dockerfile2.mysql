@@ -1,0 +1,9 @@
+FROM mysql:8.0
+
+#:2.0
+COPY ./my_custom.cnf /etc/mysql/conf.d/my_custom.cnf
+COPY ./CHESSApp_DB/chess.db.schema.mysql.sql /docker-entrypoint-initdb.d/db_init_1.sql
+COPY ./db_init.sql /docker-entrypoint-initdb.d/db_init_2.sql
+RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.gz | zcat > /docker-entrypoint-initdb.d/db_init_3.sql
+
+EXPOSE 3306

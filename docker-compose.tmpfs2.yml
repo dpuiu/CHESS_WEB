@@ -7,7 +7,6 @@ services:
 #      context: .
 #      dockerfile: Dockerfile.mysql
     image: dpuiu2/chess_web-mysql:2.0
-    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       CHESSDB_NAME: ${CHESSDB_NAME}
@@ -20,22 +19,21 @@ services:
       - "${MYSQL_PORT}:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 5s
+      interval: 20s
+      timeout: 20s
       retries: 5
-      start_period: 15s
-    tmpfs:
-      - /tmp:size=1G
+      start_period: 120s
+#    tmpfs:
+#      - /tmp:size=1G
 
   public:
 #    build:
 #      context: .
 #      dockerfile: Dockerfile.public
     image: dpuiu2/chess_web-public:2.0
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
     environment:
       CHESSDB_HOST: mysql
       CHESSDB_NAME: ${CHESSDB_NAME}
@@ -48,5 +46,5 @@ services:
       CHESSAPP_DATA_URL: ${CHESSAPP_DATA_URL}
     ports:
       - "${FLASK_PUBLIC_PORT}:5000"
-    tmpfs:
-      - /tmp:size=1G
+#    tmpfs:
+#      - /tmp:size=1G
