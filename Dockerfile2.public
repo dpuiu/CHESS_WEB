@@ -73,8 +73,8 @@ COPY ./CHESSApp_back/ .
 #CMD ["/app/public_init.sh"] 
 
 #:2.0
-RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz | tar -xz -C /tmp
-CMD ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
+RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz | tar -xz -C /tmp/
+#CMD ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
 
 # ---- Expose Flask ports ----
 EXPOSE 5000
