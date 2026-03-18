@@ -12,5 +12,9 @@ CREATE USER IF NOT EXISTS 'chess_public'@'localhost' IDENTIFIED WITH caching_sha
 GRANT SELECT ON CHESS_DB.* TO 'chess_public'@'%';
 GRANT SELECT ON CHESS_DB.* TO 'chess_public'@'localhost';
 
+--- tmp ; for fast imports
+SET autocommit=0;
+SET unique_checks=0;
+
 FLUSH PRIVILEGES;
 

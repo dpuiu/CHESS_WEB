@@ -6,7 +6,9 @@ services:
 #    build:
 #      context: .
 #      dockerfile: Dockerfile.mysql
-    image: dpuiu2/chess_web-mysql:2.0
+#    image: dpuiu2/chess_web-mysql:2.0
+    image: ghcr.io/dpuiu/chess_web-mysql:2.0
+    mem_limit: 2g
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       CHESSDB_NAME: ${CHESSDB_NAME}
@@ -22,7 +24,7 @@ services:
       interval: 20s
       timeout: 20s
       retries: 5
-      start_period: 120s
+      start_period: 240s
 #    tmpfs:
 #      - /tmp:size=1G
 
@@ -30,10 +32,12 @@ services:
 #    build:
 #      context: .
 #      dockerfile: Dockerfile.public
-    image: dpuiu2/chess_web-public:2.0
-#    depends_on:
-#      mysql:
-#        condition: service_healthy
+#    image: dpuiu2/chess_web-public:2.0
+    image: ghcr.io/dpuiu/chess_web-public:2.0
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
     environment:
       CHESSDB_HOST: mysql
       CHESSDB_NAME: ${CHESSDB_NAME}
