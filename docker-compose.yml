@@ -27,7 +27,10 @@ services:
       start_period: 15s
 
   backend_admin:
-    image: dpuiu2/chess_web-backend:1.0
+#   build:
+#      context: ./CHESSApp_back
+#      dockerfile: Dockerfile
+    image: ghcr.io/dpuiu/chess_web-backend:1.0
 #    command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5001", "--timeout", "1200", "app_admin:app"]
     command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5001", "--timeout", "1200", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-","app_admin:app"]
     restart: unless-stopped
@@ -49,7 +52,10 @@ services:
       - ./CHESS_WEB:/CHESS_WEB
 
   frontend_admin:
-    image: dpuiu2/chess_web-frontend_admin:1.0
+#    build:
+#      context: ./CHESSApp_front_admin
+#      dockerfile: Dockerfile
+    image: ghcr.io/dpuiu/chess_web-frontend_admin:1.0
 #    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5112"]
     command: ["npm", "run", "dev", "--verbose", "--", "--host", "0.0.0.0", "--port", "5112"]
     restart: unless-stopped
@@ -63,7 +69,7 @@ services:
       - ./CHESS_WEB:/CHESS_WEB
 
   public:
-    image: dpuiu2/chess_web-public:1.0
+    image: ghcr.io/dpuiu/chess_web-public:1.0
 #    command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "app_public:app"]
     command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
     restart: unless-stopped
