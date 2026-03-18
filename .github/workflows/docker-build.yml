@@ -23,22 +23,40 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push Dockerfile2.mysql
-      - name: Build MySQL Docker image 2
+      # Build and push backend_admin
+      - name: Build Backend Docker image
         run: |
-          docker build -f Dockerfile2.mysql -t ghcr.io/${{ github.repository_owner }}/chess_web-mysql:2.0 .
-      - name: Push MySQL Docker image
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/chess_web-backend:1.0 ./CHESSApp_back
+      - name: Push Backend Docker image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/chess_web-mysql:2.0
+          docker push ghcr.io/${{ github.repository_owner }}/chess_web-backend:1.0
+
+      # Build and push frontend_admin
+      - name: Build Frontend Admin Docker image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/chess_web-frontend_admin:1.0 \
+            ./CHESSApp_front_admin
+      - name: Push Frontend Admin Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/chess_web-frontend_admin:1.0
 
       # Build and push Dockerfile.public
-      - name: Build Public Docker image 1
+      - name: Build Public Docker image
         run: |
           docker build -f Dockerfile.public -t ghcr.io/${{ github.repository_owner }}/chess_web-public:1.0 .
       - name: Push Public Docker image
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/chess_web-public:1.0
 
+     # Build and push Dockerfile2.mysql
+      - name: Build MySQL Docker image 2
+        run: |
+          docker build -f Dockerfile2.mysql -t ghcr.io/${{ github.repository_owner }}/chess_web-mysql:2.0 .
+      - name: Push MySQL Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/chess_web-mysql:2.0
 
       # Build and push Dockerfile2.public
       - name: Build Public Docker image 2
