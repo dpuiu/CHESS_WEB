@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: public
+  labels:
+    app: public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: public
+  template:
+    metadata:
+      labels:
+        app: public
+    spec:
+      containers:
+        - name: public
+          image: dpuiu2/chess_web-public:2.0
+          args:
+            - bash
+            - -c
+            - >
+              exec /opt/venv/bin/gunicorn
+              -w 2
+              -b 0.0.0.0:5000
+              --timeout 600
+              --log-level debug
+              --access-logfile -
+              --error-logfile -
+              app_public:app
+          env:
+            - name: CHESSDB_HOST
+              value: mysql
+            - name: CHESSDB_NAME
+              value: CHESS_DB
+            - name: CHESSDB_PASS
+              value: your_public_password
+            - name: CHESSDB_USER
+              value: chess_public
+            - name: CHESS_FRONTEND_DIST
+              value: /app/dist
+            - name: CORS_ALLOWED_ORIGINS
+              value: http://localhost:5000
+            - name: FLASK_DEBUG
+              value: "0"
+            - name: FLASK_PUBLIC_PORT
+              value: "5000"
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: public
+  labels:
+    app: public
+spec:
+  selector:
+    app: public
+  ports:
+    - port: 5000
+      targetPort: 5000
