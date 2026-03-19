@@ -1,9 +1,24 @@
+# Stage 1: Build database
+FROM mysql:8.0 AS builder
+
+COPY CHESSApp_DB/chess.db.schema.mysql.sql db_init.sql /tmp/sql/
+RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.gz | zcat > /tmp/sql/db.backup.sql
+
+RUN mkdir -p /var/lib/mysql \
+    && mysqld --initialize-insecure --innodb-redo-log-capacity=1G --datadir=/var/lib/mysql \
+    && mysqld --skip-networking --skip-log-bin --datadir=/var/lib/mysql & \
+    pid="$!" \
+    && sleep 10 \
+    && mysql -u root < /tmp/sql/chess.db.schema.mysql.sql \
+    && mysql -u root < /tmp/sql/db_init.sql \
+    && mysql -u root < /tmp/sql/db.backup.sql  \
+    && mysqladmin -u root shutdown \
+    && wait "$pid" || true 
+
+# Stage 2: Copy only final DB into fresh image
 FROM mysql:8.0
 
-#:2.0
-COPY ./my_custom.cnf /etc/mysql/conf.d/my_custom.cnf
-COPY ./CHESSApp_DB/chess.db.schema.mysql.sql /docker-entrypoint-initdb.d/db_init_1.sql
-COPY ./db_init.sql /docker-entrypoint-initdb.d/db_init_2.sql
-RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.gz | zcat > /docker-entrypoint-initdb.d/db_init_3.sql
+COPY --from=builder /var/lib/mysql /var/lib/mysql
 
 EXPOSE 3306
+CMD ["mysqld"]
