@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: dpuiu2/chess_web-mysql:2.0
+          env:
+            - name: CHESSDB_ADMIN_PASS
+              value: your_admin_password
+            - name: CHESSDB_ADMIN_USER
+              value: chess_admin
+            - name: CHESSDB_NAME
+              value: CHESS_DB
+            - name: CHESSDB_PUBLIC_PASS
+              value: your_public_password
+            - name: CHESSDB_PUBLIC_USER
+              value: chess_public
+            - name: MYSQL_ROOT_PASSWORD
+              value: your_secure_password
+          ports:
+            - containerPort: 3306
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD
+            initialDelaySeconds: 240
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: public
+  labels:
+    app: public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: public
+  template:
+    metadata:
+      labels:
+        app: public
+    spec:
+      containers:
+        - name: public
+          image: dpuiu2/chess_web-public:2.0
+          args:
+            - bash
+            - -c
+            - >
+              exec /opt/venv/bin/gunicorn
+              -w 2
+              -b 0.0.0.0:5000
+              --timeout 2400
+              --log-level debug
+              --access-logfile -
+              --error-logfile -
+              app_public:app
+          env:
+            - name: CHESSDB_HOST
+              value: mysql
+            - name: CHESSDB_NAME
+              value: CHESS_DB
+            - name: CHESSDB_PASS
+              value: your_public_password
+            - name: CHESSDB_USER
+              value: chess_public
+            - name: CHESS_FRONTEND_DIST
+              value: /app/dist
+            - name: CORS_ALLOWED_ORIGINS
+              value: http://localhost:5000
+            - name: FLASK_DEBUG
+              value: "0"
+            - name: FLASK_PUBLIC_PORT
+              value: "5000"
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: public
+  labels:
+    app: public
+spec:
+  selector:
+    app: public
+  ports:
+    - port: 5000
+      targetPort: 5000
