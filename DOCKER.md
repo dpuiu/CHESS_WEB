@@ -1,12 +1,13 @@
-# CHESS_WEB Multi-Container Setup
+# CHESS_WEB Setup
 
 **Author:** Daniela Puiu
 **Last Update:** 2026-03-23
 **Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)
 
-```bash
-git pull https://github.com/dpuiu/CHESS_WEB.git
-```
+# GOAL
+
+* Run locally on Linux desktop
+* Update database and docker images
 
 # SETUP
 
@@ -17,7 +18,9 @@ git pull https://github.com/dpuiu/CHESS_WEB.git
 cd CHESS_WEB/
 ```
 
-## Download Database
+## Download CHESS Database
+
+* From JHU CCB ftp site:
 
 ```bash
 wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz
@@ -36,7 +39,7 @@ docker compose build
 ## Start Containers
 
 ```bash
-# Start all services
+# Start all
 docker compose up
 
 # Start only admin services
@@ -75,7 +78,7 @@ http://localhost:5000/chess_app/
 # Stop all services
 docker compose down
 
-# Stop and remove volumes (deletes database)
+# Stop and remove volumes (delete volume database)
 docker compose down -v
 ```
 
@@ -84,7 +87,7 @@ docker compose down -v
 * Docker Compose YAML Files
 
 ```bash
-docker-compose.yml  # Main Compose file
+docker-compose.yml                 # Default Docker Compose file
 ```
 
 * Dockerfiles
@@ -99,9 +102,9 @@ Dockerfile.public                  # Public frontend + backend
 * Other Files
 
 ```bash
-.env                          # MySQL users, passwords, and service ports
-my_custom.cnf                 # MySQL (mysqld) configuration
-db_init.sh / db_init.sql      # Creates MySQL database, users, and permissions
+.env                              # MySQL users, passwords, ports
+my_custom.cnf                     # MySQL (mysqld) configuration
+db_init.sh / db_init.sql          # Creates MySQL database, users, and permissions
 CHESSApp_DB/chess.db.schema.mysql.sql  # Creates MySQL database tables
 ```
 
@@ -120,5 +123,5 @@ CHESSApp_DB/chess.db.schema.mysql.sql  # Creates MySQL database tables
 # Online Data
 
 * Docker images: [Docker Hub Repository](https://hub.docker.com/repositories/dpuiu2)
-* CHESS database copy: [FTP Server](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) (~7 GB, tar.gz files)
+* CHESS database copy: [FTP Server](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) (~7 GB)
 * Protein files: [isoform.io](https://storage.googleapis.com/isoform.io/pdb_v1.3/)
