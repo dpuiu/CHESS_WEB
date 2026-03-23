@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: public
-          image: dpuiu2/chess_web-public:2.0
+          image: dpuiu2/chess_web-public:2.5
           args:
             - bash
             - -c
