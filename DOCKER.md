@@ -1,152 +1,105 @@
 # CHESS_WEB Multi-container Setup
 
-**Author:** Daniela Puiu\
-**Last Update:** 2026-03-16\
+**Author:** Daniela Puiu
+**Last Update:** 2026-03-23
 **Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)
 
 # 1. Files
 
 ## 1.1 Docker Compose YAML Files
 
--   `docker-compose.yml` : Main file; production code  
--   `docker-compose.dev.*.yml` : Additional development/production setups  
+* `docker-compose.yml` : Main file; production code
 
 ## 1.2 Dockerfiles
 
--   `CHESSApp_back/Dockerfile` : Backend  
--   `CHESSApp_front_admin/Dockerfile` : Admin frontend  
--   `Dockerfile.public` : Public frontend + backend  
--   `CHESSApp_front_public/Dockerfile` : Public frontend (outdated)
+* `CHESSApp_back/Dockerfile` : Backend
+* `CHESSApp_front_admin/Dockerfile` : Admin frontend
+* `CHESSApp_front_public/Dockerfile` : Public frontend (outdated)
+* `Dockerfile.public` : Public frontend + backend
 
 ## 1.3 Other Files (included)
 
--   `.env` : Contains MySQL users, passwords, and service ports  
--   `my_custom.cnf` : MySQL (mysqld) configuration  
--   `db_init.sh` : Creates the MySQL database & users and sets permissions  
--   `CHESSApp_DB/chess.db.schema.mysql.sql`: Creates the MySQL database tables  
+* `.env` : Contains MySQL users, passwords, and service ports
+* `my_custom.cnf` : MySQL (mysqld) configuration
+* `db_init.{sh,sql}` : Creates the MySQL database & users and sets permissions
+* `CHESSApp_DB/chess.db.schema.mysql.sql`: Creates the MySQL database tables
 
 ## 1.4 Other Files (separate download)
 
--   Docker images:  
-    [https://hub.docker.com](https://hub.docker.com/repositories/dpuiu2)  
--   CHESS database copy:  
-    [ftp://ftp.ccb.jhu.edu](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) ; tar.gz files, ~7GB  
--   Protein files available on
-    [isoform.io](https://storage.googleapis.com/isoform.io/pdb_v1.3/)  
+* Docker images:  [https://hub.docker.com](https://hub.docker.com/repositories/dpuiu2)
+* CHESS database copy:  [ftp://ftp.ccb.jhu.edu](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) ; tar.gz files, ~7GB
+* Protein files available on  [isoform.io](https://storage.googleapis.com/isoform.io/pdb_v1.3/)
 
 # 2. Docker Compose Services
 
--   `mysql`
--   `backend_admin`
--   `frontend_admin`
--   `public`
+* `mysql`
+* `backend_admin`
+* `frontend_admin`
+* `public`
 
 # 3. Docker Compose Volumes
 
--   `mysql_data`
--   `./CHESS_WEB` : bind-mount database backup and genome files
+* `mysql_data`
+* `./CHESS_WEB` : bind-mount database backup and genome files
 
-# 3. CHESS Database
+# 4. CHESS Database
 
-## 3.1 Download Copies
+## 4.1 Download Copies
 
-``` bash
-wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.tgz
-wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_dev_backups.tgz  # test
+```bash
+wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz
+wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.gz
+
+tar -xzvf CHESSApp_prod_backups.tgz -O CHESS_WEB/
+zcat CHESSApp_prod_backups.db.gz > CHESS_WEB/CHESSApp_prod_backups/db.backup.sql   
 ```
 
-## 3.2 Check File Sizes
+The `./CHESS_WEB` directory will map to the `/CHESS_WEB` volume.
 
-``` bash
-du -hs *
-  6.9G  CHESSApp_prod_backups.tgz
-  96M   CHESSApp_dev_backups.tgz  # test
-```
-
-## 3.3 Extract Archives
-
-``` bash
-tar -xzvf CHESSApp_prod_backups.tgz
-tar -xzvf CHESSApp_dev_backups.tgz  # test
-
-tree -L 2 ./CHESS_WEB/
-./CHESS_WEB/
-├── CHESSApp_data
-├── CHESSApp_dev_backups            # test
-│   └── backup_2025-12-21_22-53-30  # test
-└── CHESSApp_prod_backups
-    └── backup_2026-01-22_13-42-15
-```
-
-The ./CHESS_WEB directory which will map to /CHESS_WEB volume !!!
-
-# 4. Docker Commands
+# 5. Docker Commands
 
 > Note: default vs custom options
 
-## 4.1 Build Containers
+## 5.1 Build Containers
 
-``` bash
+```bash
 docker compose build  
 docker compose build -f docker-compose.yml --no-cache --parallel
 ```
 
-## 4.2 Start Containers
+## 5.2 Start Containers
 
-``` bash
-docker compose up  
-docker compose up -p chess_web -f docker-compose.yml --env-file .env -d
+```bash
 docker compose up mysql backend_admin frontend_admin
 docker compose up mysql public
 ```
 
-## 4.3 Check Images
+## 5.3 Stop Containers
 
-``` bash
-docker images
+```bash
+docker compose down     # or
+docker compose down -v  # delete volumes 
 ```
 
-## 4.3 Check Running Containers
+# 6. Admin Website
 
-``` bash
-docker ps --no-trunc | cut -c68-
-```
-
-## 4.3 Stop Containers
-
-``` bash
-docker compose down  
-docker compose down -v  
-```
-
-## 4.4 Check Running Containers and Volumes
-
-``` bash
-docker ps  
-docker volume ls  
-```
-
-# 5. Admin Website
-
-``` bash
+```bash
 http://localhost:5112/
 ```
 
-## 5.1 Restore Database Paths
+## 6.1 Restore Database Paths
 
-``` bash
-/CHESS_WEB/CHESSApp_prod_backups/backup_2026-01-22_13-42-15/ 
-/CHESS_WEB/CHESSApp_dev_backups/backup_2025-12-21_22-53-30/  # test
-  
-/CHESS_WEB/CHESSApp_data
+```bash
+/CHESS_WEB/CHESSApp_backups/
+/CHESS_WEB/CHESSApp_data/
 ```
 
-## 5.2 Data Directory
+## 6.2 Data Directory
 
 **DO NOT SET**
 
-# 5. Public Website
+# 7. Public Website
 
-``` bash
+```bash
 http://localhost:5000/chess_app/
 ```
