@@ -18,6 +18,7 @@
   GATEWAY=
   GATEWAY_PORT=14132
   LOCAL_PORT=9011
+ 
   ssh -p $GATEWAY_PORT -L $LOCAL_PORT:localhost:5000 -J $USER@$GATEWAY $USER@$SERVER
 ```
 
@@ -61,8 +62,8 @@ kubectl delete -f k8s2.public.yaml
 * Service + Deployment
 
 ```bash
-k8s2.mysql.yaml                  # Mysql + database
-k8s2.public.yaml                 # Public frontend + backend + data files
+k8s2.mysql.yaml                  # Mysql 8.0 image + CHESS_DB database
+k8s2.public.yaml                 # Public frontend + backend + CHESS_DB data files
 ```
 
 # SERVICES
@@ -73,4 +74,4 @@ k8s2.public.yaml                 # Public frontend + backend + data files
 # VOLUMES
 
 * none
-* /tmp/ instead
+* using /tmp/ instead
