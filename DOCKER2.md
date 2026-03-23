@@ -2,7 +2,7 @@
 
 **Author:** Daniela Puiu  
 **Last Update:** 2026-03-23  
-**Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)  
+**Topic:** [Kubernetes](https://kubernetes.io/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)  
 
 # GOAL
 
@@ -39,7 +39,7 @@ kubectl apply -f k8s2.public.yaml
 ## Forward Port
 
 ```bash
-kubectl port-forward service/public $FLASK_PUBLIC_PORT:$FLASK_PUBLIC_PORT
+kubectl port-forward service/public 5000:5000
 ```
 
 ## Connect to the Public Website
