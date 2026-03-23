@@ -1,4 +1,4 @@
-# CHESS_WEB Setup
+# CHESS_WEB Docker Setup
 
 **Author:** Daniela Puiu  
 **Last Update:** 2026-03-23  
@@ -6,8 +6,8 @@
 
 # GOAL
 
-* Run locally on Linux desktop
-* Update database and docker images
+* Run CHESS_WEB locally on Linux desktop
+* Update database and containers
 
 # SETUP
 
@@ -34,8 +34,8 @@ zcat CHESSApp_prod_backups.db.gz > CHESS_WEB/CHESSApp_prod_backups/db.backup.sql
 
 ```bash
 # Start all
-docker compose up                             # or
-docker compose -f docker_compose.yml up       # same
+docker compose up                                     # or
+docker compose -f docker_compose.yml up       
 
 # Start only admin services
 docker compose up mysql backend_admin frontend_admin
@@ -44,7 +44,6 @@ docker compose up mysql backend_admin frontend_admin
 docker compose up mysql public
 ```
 Note: containers are automatically pulled from Dockerhub.com on the 1st run and cached  
-Version: 1.0  
 
 ## Connect to the Admin Website
 
@@ -54,7 +53,7 @@ Web interface on local machine:
 http://localhost:5112/
 ```
 
-Provide Database Paths (inside container):
+Provide Database Paths:
 
 ```
 /CHESS_WEB/CHESSApp_backups/
@@ -79,7 +78,34 @@ docker compose down
 docker compose down -v
 ```
 
-# Git Files
+## Update Conatiners (optional)
+
+* Build
+
+```bash
+V=2.?                                                                         
+docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$V .
+```
+
+* Push to Dockerhub
+
+```bash
+docker push dpuiu2/chess_web-public:$V
+```
+
+* Test 
+
+* Edit version in docker-compose.yml/docker-compose2.yml 
+
+```bash
+nano docker-compose2.yml                  
+docker compose -f docker-compose2.yml up 
+```
+* Restart
+* Check web app is working
+* Stop
+
+# FILES
 
 * Docker Compose YAML Files
 
@@ -105,19 +131,19 @@ db_init.sh / db_init.sql          # Creates MySQL database, users, and permissio
 CHESSApp_DB/chess.db.schema.mysql.sql  # Creates MySQL database tables
 ```
 
-# Docker Compose Services
+# SERVICES
 
 * `mysql`
 * `backend_admin`
 * `frontend_admin`
 * `public`
 
-# Docker Compose Volumes
+# VOLUMES
 
 * `mysql_data`
 * `./CHESS_WEB` — bind-mounted for database backups and genome files
 
-# Online Data
+# ONLINE DATA
 
 * Docker images: [Docker Hub Repository](https://hub.docker.com/repositories/dpuiu2)
 * CHESS database copy: [FTP Server](ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB) (~7 GB)
