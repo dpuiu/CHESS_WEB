@@ -8,7 +8,9 @@
 
 * Run CHESS_WEB on Kubernetes Cluster
 
-# Login Kubectl server
+# SETUP
+
+## Login into Kubectl Server
 
 ```bash
   USER=
@@ -33,7 +35,7 @@ kubectl apply -f k8s2.mysql.yaml
 kubectl apply -f k8s2.public.yaml 
 ```
 
-## Port Forward
+## Forward Port
 
 ```bash
 kubectl port-forward service/public $FLASK_PUBLIC_PORT:$FLASK_PUBLIC_PORT
@@ -54,7 +56,7 @@ kubectl delete -f k8s2.mysql.yaml
 kubectl delete -f k8s2.public.yaml
 ```
 
-# Kube Files
+# FILES
 
 * Service + Deployment
 
@@ -63,9 +65,12 @@ k8s2.mysql.yaml                  # Mysql + database
 k8s2.public.yaml                 # Public frontend + backend + data files
 ```
 
-# Services
+# SERVICES
 
 * `mysql`
 * `public`
 
-# No Volumes
+# VOLUMES
+
+* none
+* /tmp/ instead
