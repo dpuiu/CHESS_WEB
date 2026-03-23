@@ -1,8 +1,8 @@
 # CHESS_WEB Setup
 
-**Author:** Daniela Puiu
-**Last Update:** 2026-03-23
-**Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)
+**Author:** Daniela Puiu  
+**Last Update:** 2026-03-23  
+**Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)  
 
 # GOAL
 
@@ -30,17 +30,12 @@ tar -xzvf CHESSApp_prod_backups.data.tgz -C CHESS_WEB/
 zcat CHESSApp_prod_backups.db.gz > CHESS_WEB/CHESSApp_prod_backups/db.backup.sql
 ```
 
-## Build Containers (optional)
-
-```bash
-docker compose build
-```
-
 ## Start Containers
 
 ```bash
 # Start all
-docker compose up
+docker compose up                             # or
+docker compose -f docker_compose.yml up       # same
 
 # Start only admin services
 docker compose up mysql backend_admin frontend_admin
@@ -48,6 +43,8 @@ docker compose up mysql backend_admin frontend_admin
 # Start only public services
 docker compose up mysql public
 ```
+Note: containers are automatically pulled from Dockerhub.com on the 1st run and cached  
+Version: 1.0  
 
 ## Connect to the Admin Website
 
@@ -57,7 +54,7 @@ Web interface on local machine:
 http://localhost:5112/
 ```
 
-Database Paths (inside container):
+Provide Database Paths (inside container):
 
 ```
 /CHESS_WEB/CHESSApp_backups/
