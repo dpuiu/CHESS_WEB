@@ -10,12 +10,14 @@
 
 # Login Kubectl server
 
+```bash
   USER=
   SERVER=
-  GATEWAY
+  GATEWAY=
   GATEWAY_PORT=14132
   LOCAL_PORT=9011
-  ssh -p $GATEWAY_PORT -L $LOCAL_PORT:localhost:5000 -J $USER@$GATEWAY dpuiu@$SERVER
+  ssh -p $GATEWAY_PORT -L $LOCAL_PORT:localhost:5000 -J $USER@$GATEWAY $USER@$SERVER
+```
 
 ## Download Git Repository
 
