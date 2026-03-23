@@ -1,4 +1,4 @@
-# CHESS_WEB Web Application Setup
+# CHESS_WEB Kubernetes Setup
 
 **Author:** Daniela Puiu  
 **Last Update:** 2026-03-23  
