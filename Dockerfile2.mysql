@@ -1,9 +1,12 @@
 # Stage 1: Build database
 FROM mysql:8.0 AS builder
 
-COPY CHESSApp_DB/chess.db.schema.mysql.sql db_init.sql  /tmp/sql/
+RUN mkdir /tmp/sql/
+COPY CHESSApp_DB/chess.db.schema.mysql.sql  /tmp/sql/chess.db.schema.mysql.sql 
+COPY db_init.sql                            /tmp/sql/db_init.sql
 RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.gz | zcat > /tmp/sql/db.backup.sql
 
+#github version:ok on dev; dump wc:1160,3724
 RUN mkdir -p /var/lib/mysql \
     && mysqld --initialize-insecure --innodb-redo-log-capacity=512M --datadir=/var/lib/mysql \
     && mysqld --skip-networking --skip-log-bin --datadir=/var/lib/mysql & \
@@ -18,7 +21,7 @@ RUN mkdir -p /var/lib/mysql \
 # Stage 2: Copy only final DB into fresh image
 FROM mysql:8.0
 
-COPY --from=builder /var/lib/mysql /var/lib/mysql
+COPY --from=builder /var/lib/mysql /var/lib/mysql 
 
 EXPOSE 3306
 CMD ["mysqld"]
