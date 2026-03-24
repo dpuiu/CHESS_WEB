@@ -19,7 +19,6 @@ services:
       - ./db_init.sh:/docker-entrypoint-initdb.d/db_init_1.sh:ro
       - ./CHESSApp_DB/chess.db.schema.mysql.sql:/docker-entrypoint-initdb.d/db_init_2.sql:ro
     healthcheck:
-#      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD}"]
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
@@ -31,7 +30,6 @@ services:
 #      context: ./CHESSApp_back
 #      dockerfile: Dockerfile
     image: ghcr.io/dpuiu/chess_web-backend:1.0
-#    command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5001", "--timeout", "1200", "app_admin:app"]
     command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5001", "--timeout", "1200", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-","app_admin:app"]
     restart: unless-stopped
     depends_on:
@@ -56,7 +54,6 @@ services:
 #      context: ./CHESSApp_front_admin
 #      dockerfile: Dockerfile
     image: ghcr.io/dpuiu/chess_web-frontend_admin:1.0
-#    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5112"]
     command: ["npm", "run", "dev", "--verbose", "--", "--host", "0.0.0.0", "--port", "5112"]
     restart: unless-stopped
     environment:
@@ -69,8 +66,10 @@ services:
       - ./CHESS_WEB:/CHESS_WEB
 
   public:
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile.public
     image: ghcr.io/dpuiu/chess_web-public:1.0
-#    command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "app_public:app"]
     command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
     restart: unless-stopped
     depends_on:

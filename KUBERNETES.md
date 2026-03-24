@@ -36,6 +36,19 @@ kubectl apply -f k8s2.mysql.yaml
 kubectl apply -f k8s2.public.yaml 
 ```
 
+## Check Services
+
+* The 2 pods should be listed as **Running**
+
+```bash
+kubectl get configmaps,cronjobs,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,persistentvolumeclaims,poddisruptionbudgets,pods,podtemplates,replicasets,replicationcontrollers,resourcequotas,rolebindings,roles,secrets,serviceaccounts,services,statefulsets -n chess-web
+ 
+  NAME             READY   STATUS    RESTARTS   AGE
+  pod/mysql-...    1/1     Running   0          7s
+  pod/public-...   1/1     Running   0          7s
+
+```
+
 ## Forward Port
 
 ```bash

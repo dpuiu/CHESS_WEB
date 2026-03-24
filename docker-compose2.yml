@@ -32,7 +32,7 @@ services:
 #      context: .
 #      dockerfile: Dockerfile.public
     image: dpuiu2/chess_web-public:2.5
-#    image: ghcr.io/dpuiu/chess_web-public:2.0
+#    image: ghcr.io/dpuiu/chess_web-public:2.5
     depends_on:
       mysql:
         condition: service_healthy

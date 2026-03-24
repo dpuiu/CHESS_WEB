@@ -45,6 +45,13 @@ docker compose up mysql public
 ```
 Note: containers are automatically pulled from Dockerhub.com on the 1st run and cached  
 
+## Check Images and Containers
+
+```bash
+docker images
+docker ps
+```
+
 ## Connect to the Admin Website
 
 Web interface on local machine:
@@ -78,7 +85,7 @@ docker compose down
 docker compose down -v
 ```
 
-## Update Conatiners (optional)
+## Update Containers (optional)
 
 * Build
 

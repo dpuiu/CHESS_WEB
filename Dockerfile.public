@@ -65,6 +65,9 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
 # ---- Copy application code ----
 COPY ./CHESSApp_back/ .
 
+# Keep your original command
+CMD ["bash", "-c", "exec /opt/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 --timeout 600 --log-level debug --access-logfile - --error-logfile - app_public:app"]
+
 # ---- Expose Flask ports ----
 EXPOSE 5000
 EXPOSE 5001
