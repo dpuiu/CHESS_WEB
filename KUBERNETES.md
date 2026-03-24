@@ -34,6 +34,7 @@ cd CHESS_WEB/deploy/
 ```bash
 kubectl apply -f k8s2.mysql.yaml 
 kubectl apply -f k8s2.public.yaml 
+kubectl apply -f k8s2.ingress.yaml
 ```
 
 ## Check Services
@@ -41,18 +42,21 @@ kubectl apply -f k8s2.public.yaml
 * The 2 pods should be listed as **Running**
 
 ```bash
-kubectl get configmaps,cronjobs,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,persistentvolumeclaims,poddisruptionbudgets,pods,podtemplates,replicasets,replicationcontrollers,resourcequotas,rolebindings,roles,secrets,serviceaccounts,services,statefulsets -n chess-web
+kubectl get pods,ingresses -n chess-web
  
   NAME             READY   STATUS    RESTARTS   AGE
   pod/mysql-...    1/1     Running   0          7s
   pod/public-...   1/1     Running   0          7s
+
+  NAME                              CLASS   HOSTS                     ADDRESS         PORTS   AGE
+  ingress.networking.k8s.io/nginx   nginx   dev.sites.idies.jhu.edu   ...             80      18m
 
 ```
 
 ## Forward Port
 
 ```bash
-kubectl port-forward service/public 5000:5000
+kubectl port-forward service/public 5000:80
 ```
 
 ## Connect to the Public Website
@@ -61,7 +65,7 @@ Web interface on local machine:
 
 ```
 http://localhost:5000/chess_app/
-https://dev.sites.idies.jhu.edu/chess_web/chess_app/
+https://dev.sites.idies.jhu.edu/chess_app/
 ```
 
 ## Stop Services
@@ -69,6 +73,7 @@ https://dev.sites.idies.jhu.edu/chess_web/chess_app/
 ```bash
 kubectl delete -f k8s2.mysql.yaml
 kubectl delete -f k8s2.public.yaml
+kubectl delete ingress nginx
 ```
 
 # FILES
