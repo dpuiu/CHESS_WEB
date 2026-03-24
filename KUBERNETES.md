@@ -25,7 +25,7 @@
 ## Download Git Repository
 
 ```bash
-git pull https://github.com/dpuiu/CHESS_WEB.git
+git clone https://github.com/dpuiu/CHESS_WEB.git
 cd CHESS_WEB/deploy/
 ```
 
@@ -39,18 +39,25 @@ kubectl apply -f k8s2.ingress.yaml
 
 ## Check Services
 
-* The 2 pods should be listed as **Running**
+* The **pods** should be listed as **Running**, **ingress** have **ADDRESS** ...
 
+Example: 
 ```bash
-kubectl get pods,ingresses -n chess-web
- 
-  NAME             READY   STATUS    RESTARTS   AGE
-  pod/mysql-...    1/1     Running   0          7s
-  pod/public-...   1/1     Running   0          7s
+  kubectl get pods,services,endpoints,ingresses -n chess-web
+  NAME                          READY   STATUS    RESTARTS   AGE
+  pod/mysql-7b889d8bb4-k8nmj    1/1     Running   0          4m41s
+  pod/public-5c8f66d6bf-ncbkc   1/1     Running   0          4m32s
+
+  NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+  service/mysql    ClusterIP   10.102.115.162   <none>        3306/TCP   4m41s
+  service/public   ClusterIP   10.109.5.6       <none>        80/TCP     4m32s
+
+  NAME               ENDPOINTS             AGE
+  endpoints/mysql    192.168.44.189:3306   4m41s
+  endpoints/public   192.168.44.165:5000   4m32s
 
   NAME                              CLASS   HOSTS                     ADDRESS         PORTS   AGE
-  ingress.networking.k8s.io/nginx   nginx   dev.sites.idies.jhu.edu   ...             80      18m
-
+  ingress.networking.k8s.io/nginx   nginx   dev.sites.idies.jhu.edu   10.109.15.250   80      4m26s
 ```
 
 ## Forward Port
@@ -64,9 +71,11 @@ kubectl port-forward service/public 5000:80
 Web interface on local machine:
 
 ```
-http://localhost:5000/chess_app/
-https://dev.sites.idies.jhu.edu/chess_app/
+http://localhost:5000/chess_app/			# port forward
+https://dev.sites.idies.jhu.edu/chess_app/		# dev.sites.idies.jhu.edu
 ```
+
+NOTE: If you get redirected after restarting the app, you may need to wait a few minutes and try again
 
 ## Stop Services
 
@@ -83,6 +92,7 @@ kubectl delete ingress nginx
 ```bash
 k8s2.mysql.yaml                  # Mysql 8.0 image + CHESS_DB database
 k8s2.public.yaml                 # Public frontend + backend + CHESS_DB data files
+k8s2.ingress.yaml                # Ingress config
 ```
 
 # SERVICES
