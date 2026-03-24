@@ -26,7 +26,7 @@
 
 ```bash
 git pull https://github.com/dpuiu/CHESS_WEB.git
-cd CHESS_WEB/
+cd CHESS_WEB/deploy/
 ```
 
 ## Start Services
@@ -61,6 +61,7 @@ Web interface on local machine:
 
 ```
 http://localhost:5000/chess_app/
+https://dev.sites.idies.jhu.edu/chess_web/chess_app/
 ```
 
 ## Stop Services

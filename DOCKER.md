@@ -15,7 +15,7 @@
 
 ```bash
 git pull https://github.com/dpuiu/CHESS_WEB.git
-cd CHESS_WEB/
+cd CHESS_WEB/deploy
 ```
 
 ## Download CHESS Database
@@ -114,7 +114,7 @@ docker compose -f docker-compose2.yml up
 
 # FILES
 
-* Docker Compose YAML Files
+* Docker Compose YAML Files under **deploy/** directory
 
 ```bash
 docker-compose.yml                 # Default Docker Compose file

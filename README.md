@@ -9,3 +9,4 @@ https://github.com/alevar/CHESS_WEB
 ## Dockerization Instructions
 Dockerization instructions can be found here:  
 https://github.com/dpuiu/CHESS_WEB/blob/main/DOCKER.md
+https://github.com/dpuiu/CHESS_WEB/blob/main/KUBERNETES.md
