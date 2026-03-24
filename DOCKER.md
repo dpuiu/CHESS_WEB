@@ -14,7 +14,7 @@
 ## Download Git Repository
 
 ```bash
-git pull https://github.com/dpuiu/CHESS_WEB.git
+git clone https://github.com/dpuiu/CHESS_WEB.git
 cd CHESS_WEB/deploy
 ```
 
