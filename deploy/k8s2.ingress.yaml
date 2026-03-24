@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  namespace: chess-web
+  creationTimestamp: null
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: dev.sites.idies.jhu.edu
+      http:
+        paths:
+          - path: /chess_app
+            pathType: Prefix
+            backend:
+              service:
+                name: public
+                port:
+                  number: 80
+status:
+  loadBalancer: {}
