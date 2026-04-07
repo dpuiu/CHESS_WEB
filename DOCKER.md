@@ -1,7 +1,7 @@
 # CHESS_WEB Docker Setup
 
 **Author:** Daniela Puiu  
-**Last Update:** 2026-03-23  
+**Last Update:** 2026-4-07   
 **Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)  
 
 # GOAL
@@ -15,7 +15,7 @@
 
 ```bash
 git clone https://github.com/dpuiu/CHESS_WEB.git
-cd CHESS_WEB/deploy
+cd CHESS_WEB/
 ```
 
 ## Download CHESS Database
@@ -23,11 +23,9 @@ cd CHESS_WEB/deploy
 * From JHU CCB ftp site:
 
 ```bash
-wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz
-wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.gz
-
-tar -xzvf CHESSApp_prod_backups.data.tgz -C CHESS_WEB/
-zcat CHESSApp_prod_backups.db.gz > CHESS_WEB/CHESSApp_prod_backups/db.backup.sql
+wget ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.tgz
+mkdir -p CHESS_WEB/
+tar -xzvf CHESSApp_prod_backups.tgz -C CHESS_WEB/
 ```
 
 ## Start Containers
@@ -113,8 +111,6 @@ docker compose -f docker-compose2.yml up
 * Stop
 
 # FILES
-
-* Docker Compose YAML Files under **deploy/** directory
 
 ```bash
 docker-compose.yml                 # Default Docker Compose file
