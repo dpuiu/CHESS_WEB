@@ -1,20 +1,24 @@
 ########################################
 # ---- Stage 1: Frontend Builder ----
 ########################################
-
-FROM dpuiu2/chess_web-public:1.0
+ARG V2
+FROM dpuiu2/chess_web-public:${V2}
 
 # Create group and user
 RUN groupadd -g 1000 appgroup \
     && useradd -m -u 1000 -g appgroup appuser
 
 # Fix permissions (adjust paths if needed)
-RUN chown -R appuser:appgroup /app /tmp
+RUN mkdir -p /app /tmp \
+  && chown -R appuser:appgroup /app /tmp
 
 # Switch to non-root user
 USER 1000:1000
 
-RUN curl -L --fail --retry 5 ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz | tar -xz -C /tmp/ 
+ARG CHESSAPP_DATA_URL
+ENV CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL
+
+RUN curl -L --fail --retry 5 $CHESSAPP_DATA_URL | tar -xz -C /tmp/ 
 
 # Keep your original command
 CMD ["bash", "-c", "exec /opt/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 --timeout 600 --log-level debug --access-logfile - --error-logfile - app_public:app"]

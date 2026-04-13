@@ -85,17 +85,31 @@ docker compose down -v
 
 ## Update Containers (optional)
 
-* Build
+* Build public v1,v2 & mysql v2 (v2's includes the FASTA/GTF data files, MYSQL database)
 
 ```bash
-V=2.?                                                                         
-docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$V .
+# get/set container Versions
+head -n 3 env.sh  
+  export V1=1.2
+  export V2=2.7
+
+# set all env variables 
+. ./env.sh
+ 
+# build and tag chess_web-public V1
+docker build --no-cache -f Dockerfile.public  -t dpuiu2/chess_web-public:$V1 --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL .
+docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$V2 --build-arg CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL --build-arg V2=$V2  .
+
+# build and tag chess_web-public & chess_web-mysql V2
+docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-mysql:$V2  --build-arg CHESSAPP_DB_URL=$CHESSAPP_DB_URL .
 ```
 
 * Push to Dockerhub
 
 ```bash
-docker push dpuiu2/chess_web-public:$V
+docker push dpuiu2/chess_web-public:$V1
+docker push dpuiu2/chess_web-public:$V2
+docker push dpuiu2/chess_web-mysql:$V2
 ```
 
 * Test 
@@ -128,7 +142,7 @@ Dockerfile.public                  # Public frontend + backend
 * Other Files
 
 ```bash
-.env                              # MySQL users, passwords, ports
+{.env,env.sh}                     # MySQL users, passwords, ports
 my_custom.cnf                     # MySQL (mysqld) configuration
 db_init.sh / db_init.sql          # Creates MySQL database, users, and permissions
 CHESSApp_DB/chess.db.schema.mysql.sql  # Creates MySQL database tables

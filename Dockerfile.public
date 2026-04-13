@@ -20,10 +20,12 @@ COPY ./CHESSApp_front_public/ .
 
 RUN ls /app/
 
-RUN NODE_OPTIONS="--max-old-space-size=8192"  npm run build
+# use docker build --no-cache -f Dockerfile.public -t dpuiu2/chess_web-public:1.2 --build-arg VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"
+ARG VITE_API_BASE_URL
+RUN VITE_API_BASE_URL=$VITE_API_BASE_URL NODE_OPTIONS="--max-old-space-size=8192"  npm run build
 
 ########################################
-# ---- Stage 2: Mysql Builder ----
+# ---- Stage 2: Backend Builder ----
 ########################################
 
 FROM debian:bookworm

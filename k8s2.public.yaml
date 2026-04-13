@@ -23,7 +23,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: public
-          image: dpuiu2/chess_web-public:2.4
+          # image: docker.io/dpuiu2/chess_web-public:2.5
+          image: docker.io/dpuiu2/chess_web-public:3.7
+          # imagePullPolicy: IfNotPresent, Always , Never
           args:
             - bash
             - -c
@@ -48,14 +50,13 @@ spec:
             - name: CHESS_FRONTEND_DIST
               value: /app/dist
             - name: CORS_ALLOWED_ORIGINS
-#              value: http://localhost:5000  
               value: https://dev.sites.idies.jhu.edu
             - name: FLASK_DEBUG
               value: "0"
             - name: FLASK_PUBLIC_PORT
               value: "5000"
-            - name: FLASK_APPLICATION_ROOT
-              value: /chess_app
+#            - name: FLASK_APPLICATION_ROOT
+#              value: /chess_app
           ports:
             - containerPort: 5000
           # Container-level security context

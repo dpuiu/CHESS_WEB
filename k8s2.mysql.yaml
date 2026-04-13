@@ -33,7 +33,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: mysql
-          image: dpuiu2/chess_web-mysql:2.0
+          image: docker.io/dpuiu2/chess_web-mysql:2.5
           ports:
             - containerPort: 3306
           env:
