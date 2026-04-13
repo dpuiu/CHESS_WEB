@@ -26,7 +26,7 @@
 
 ```bash
 git clone https://github.com/dpuiu/CHESS_WEB.git
-cd CHESS_WEB/deploy/
+cd CHESS_WEB/
 ```
 
 ## Start Services
@@ -63,6 +63,7 @@ Example:
 ## Forward Port
 
 ```bash
+kubectl port-forward service/public 5000:5000
 kubectl port-forward service/public 5000:80
 ```
 

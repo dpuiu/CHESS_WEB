@@ -36,7 +36,7 @@ docker compose up                                     # or
 docker compose -f docker_compose.yml up       
 
 # Start only admin services
-docker compose up mysql backend_admin frontend_admin
+docker compose up mysql backend_admin frontend_admin [--build]
 
 # Start only public services
 docker compose up mysql public
@@ -61,7 +61,7 @@ http://localhost:5112/
 Provide Database Paths:
 
 ```
-/CHESS_WEB/CHESSApp_backups/
+/CHESS_WEB/CHESSApp_prod_backups/
 /CHESS_WEB/CHESSApp_data/
 ```
 
