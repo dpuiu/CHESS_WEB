@@ -83,19 +83,24 @@ docker compose down
 docker compose down -v
 ```
 
-## Update Containers (optional)
+## Update Containers For Kubernetes (optional)
 
-* Build public v1,v2 & mysql v2 (v2's includes the FASTA/GTF data files, MYSQL database)
+* Build public v1+,v2+ & mysql v2+ (v2 includes the FASTA/GTF data files, MYSQL database)
 
 ```bash
 # get/set container Versions
 head -n 3 env.sh  
-  export V1=1.2
-  export V2=2.7
+  export V1=1.2  # VITE_API_BASE_URL 
+  export V2=2.7  # CHESSAPP_DATA_URL, CHESSAPP_DB_URL's
 
 # set all env variables 
 . ./env.sh
  
+cat ./env.sh  | egrep 'URL'
+  export CHESSDB_DB_URL="ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.sql"
+  export CHESSAPP_DATA_URL="ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz"
+  export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"
+
 # build and tag chess_web-public V1
 docker build --no-cache -f Dockerfile.public  -t dpuiu2/chess_web-public:$V1 --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL .
 docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$V2 --build-arg CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL --build-arg V2=$V2  .
@@ -114,7 +119,7 @@ docker push dpuiu2/chess_web-mysql:$V2
 
 * Test 
 
-* Edit version in docker-compose.yml/docker-compose2.yml 
+* Edit versions in docker-compose.yml/docker-compose2.yml 
 
 ```bash
 nano docker-compose2.yml                  
