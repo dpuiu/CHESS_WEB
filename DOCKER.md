@@ -90,8 +90,11 @@ docker compose down -v
 ```bash
 # get/set container Versions
 head -n 3 env.sh  
-  export V1=1.2  # VITE_API_BASE_URL 
-  export V2=2.7  # CHESSAPP_DATA_URL, CHESSAPP_DB_URL's
+  export V1=1.0  # to run locally                                    
+  export V2=2.0  # to run locally
+ 
+  export V1=1.2  # to run on JHU server
+  export V2=2.7  # to run on JHU server
 
 # set all env variables 
 . ./env.sh
@@ -99,14 +102,18 @@ head -n 3 env.sh
 cat ./env.sh  | egrep 'URL'
   export CHESSDB_DB_URL="ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.sql"
   export CHESSAPP_DATA_URL="ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz"
-  export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"
+ 
+ #export VITE_API_BASE_URL="https://localhost:5000"                   # to run locally
+  export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"      # to run on JHU server
+
+  
 
 # build and tag chess_web-public V1
 docker build --no-cache -f Dockerfile.public  -t dpuiu2/chess_web-public:$V1 --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL .
-docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$V2 --build-arg CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL --build-arg V2=$V2  .
+docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$V2 --build-arg CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL --build-arg V1=$V1 .
 
 # build and tag chess_web-public & chess_web-mysql V2
-docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-mysql:$V2  --build-arg CHESSAPP_DB_URL=$CHESSAPP_DB_URL .
+docker build --no-cache -f Dockerfile2.mysql -t dpuiu2/chess_web-mysql:$V2  --build-arg CHESSAPP_DB_URL=$CHESSAPP_DB_URL .
 ```
 
 * Push to Dockerhub

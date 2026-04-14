@@ -17,6 +17,7 @@ spec:
                 name: public
                 port:
                   number: 80
+
           - path: /chess_app
             pathType: Prefix
             backend:
@@ -24,4 +25,3 @@ spec:
                 name: public
                 port:
                   number: 80
-

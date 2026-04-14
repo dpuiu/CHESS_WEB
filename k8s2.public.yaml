@@ -23,8 +23,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: public
-          # image: docker.io/dpuiu2/chess_web-public:2.5
-          image: docker.io/dpuiu2/chess_web-public:3.7
+          image: docker.io/dpuiu2/chess_web-public:2.7
           # imagePullPolicy: IfNotPresent, Always , Never
           args:
             - bash
@@ -55,8 +54,8 @@ spec:
               value: "0"
             - name: FLASK_PUBLIC_PORT
               value: "5000"
-#            - name: FLASK_APPLICATION_ROOT
-#              value: /chess_app
+            - name: FLASK_APPLICATION_ROOT
+              value: /chess_app
           ports:
             - containerPort: 5000
           # Container-level security context

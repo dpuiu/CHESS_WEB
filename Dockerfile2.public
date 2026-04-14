@@ -1,8 +1,8 @@
 ########################################
 # ---- Stage 1: Frontend Builder ----
 ########################################
-ARG V2
-FROM dpuiu2/chess_web-public:${V2}
+ARG V1
+FROM dpuiu2/chess_web-public:${V1:-1.0}
 
 # Create group and user
 RUN groupadd -g 1000 appgroup \
