@@ -1,6 +1,7 @@
 namespace: chess-web
 
 mysql:
+  replicaCount: 1
   image: docker.io/dpuiu2/chess_web-mysql:2.5
   adminPassword: your_admin_password
   adminUser: chess_admin
@@ -10,6 +11,7 @@ mysql:
   rootPassword: your_secure_password
 
 public:
+  replicaCount: 1
   image: docker.io/dpuiu2/chess_web-public:2.7
 #  image: docker.io/dpuiu2/chess_web-public:2.5
   corsOrigins: https://dev.sites.idies.jhu.edu
