@@ -2,12 +2,13 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx
-  namespace: chess-web
+#  namespace: chess-web
   creationTimestamp: null
 spec:
   ingressClassName: nginx
   rules:
-    - host: dev.sites.idies.jhu.edu
+#    - host: dev.sites.idies.jhu.edu
+    - host: localhost
       http:
         paths:
           - path: /api
@@ -25,3 +26,20 @@ spec:
                 name: public
                 port:
                   number: 80
+
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: public
+                port:
+                  number: 80
+
+          - path: /middleware/stats
+            pathType: Prefix
+            backend:
+              service:
+                name: public
+                port:
+                  number: 80
+

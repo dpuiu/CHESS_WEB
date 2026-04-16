@@ -1,3 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: mysql
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      # Pod-level security context
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mysql
+          image: docker.io/dpuiu2/chess_web-mysql:2.5
+          ports:
+            - containerPort: 3306
+          env:
+            - name: CHESSDB_ADMIN_PASS
+              value: your_admin_password
+            - name: CHESSDB_ADMIN_USER
+              value: chess_admin
+            - name: CHESSDB_NAME
+              value: CHESS_DB
+            - name: CHESSDB_PUBLIC_PASS
+              value: your_public_password
+            - name: CHESSDB_PUBLIC_USER
+              value: chess_public
+            - name: MYSQL_ROOT_PASSWORD
+              value: your_secure_password
+          # Container-level security
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          # Container-level resources
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,7 +91,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: public
-          image: dpuiu2/chess_web-public:2.4
+          image: docker.io/dpuiu2/chess_web-public:2.5
+#          image: docker.io/dpuiu2/chess_web-public:2.7
+          # imagePullPolicy: IfNotPresent, Always , Never
           args:
             - bash
             - -c
@@ -48,7 +118,6 @@ spec:
             - name: CHESS_FRONTEND_DIST
               value: /app/dist
             - name: CORS_ALLOWED_ORIGINS
-#              value: http://localhost:5000  
               value: https://dev.sites.idies.jhu.edu
             - name: FLASK_DEBUG
               value: "0"
@@ -90,85 +159,28 @@ spec:
       port: 80
       targetPort: 5000
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: mysql
-spec:
-  ports:
-    - port: 3306
-      targetPort: 3306
-  selector:
-    app: mysql
-
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mysql
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mysql
-  template:
-    metadata:
-      labels:
-        app: mysql
-    spec:
-      # Pod-level security context
-      securityContext:
-        runAsUser: 999
-        runAsGroup: 999
-        fsGroup: 999
-        seccompProfile:
-          type: RuntimeDefault
-      containers:
-        - name: mysql
-          image: dpuiu2/chess_web-mysql:2.0
-          ports:
-            - containerPort: 3306
-          env:
-            - name: CHESSDB_ADMIN_PASS
-              value: your_admin_password
-            - name: CHESSDB_ADMIN_USER
-              value: chess_admin
-            - name: CHESSDB_NAME
-              value: CHESS_DB
-            - name: CHESSDB_PUBLIC_PASS
-              value: your_public_password
-            - name: CHESSDB_PUBLIC_USER
-              value: chess_public
-            - name: MYSQL_ROOT_PASSWORD
-              value: your_secure_password
-          # Container-level security
-          securityContext:
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-          # Container-level resources
-          resources:
-            requests:
-              cpu: "500m"
-              memory: "512Mi"
-            limits:
-              cpu: "1"
-              memory: "1Gi"
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx
-  namespace: chess-web
+#  namespace: chess-web
   creationTimestamp: null
 spec:
   ingressClassName: nginx
   rules:
-    - host: dev.sites.idies.jhu.edu
+#    - host: dev.sites.idies.jhu.edu
+    - host: localhost
       http:
         paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: public
+                port:
+                  number: 80
+
           - path: /chess_app
             pathType: Prefix
             backend:
@@ -176,6 +188,19 @@ spec:
                 name: public
                 port:
                   number: 80
-status:
-  loadBalancer: {}
 
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: public
+                port:
+                  number: 80
+
+          - path: /middleware/stats
+            pathType: Prefix
+            backend:
+              service:
+                name: public
+                port:
+                  number: 80
