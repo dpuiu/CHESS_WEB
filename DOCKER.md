@@ -1,7 +1,7 @@
 # CHESS_WEB Docker Setup
 
 **Author:** Daniela Puiu  
-**Last Update:** 2026-4-07   
+**Last Update:** 2026-04-14   
 **Topic:** [Docker Compose](https://docs.docker.com/compose/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)  
 
 # GOAL
@@ -36,7 +36,7 @@ docker compose up                                     # or
 docker compose -f docker_compose.yml up       
 
 # Start only admin services
-docker compose up mysql backend_admin frontend_admin [--build]
+docker compose up mysql backend_admin frontend_admin
 
 # Start only public services
 docker compose up mysql public
@@ -105,8 +105,6 @@ cat ./env.sh  | egrep 'URL'
  
  #export VITE_API_BASE_URL="https://localhost:5000"                   # to run locally
   export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"      # to run on JHU server
-
-  
 
 # build and tag chess_web-public V1
 docker build --no-cache -f Dockerfile.public  -t dpuiu2/chess_web-public:$V1 --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL .

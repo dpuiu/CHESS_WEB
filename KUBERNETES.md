@@ -1,7 +1,7 @@
 # CHESS_WEB Kubernetes Setup
 
 **Author:** Daniela Puiu  
-**Last Update:** 2026-03-23  
+**Last Update:** 2026-04-16  
 **Topic:** [Kubernetes](https://kubernetes.io/) setup for [CHESS_WEB](https://github.com/alevar/CHESS_WEB)  
 
 # GOAL
@@ -32,9 +32,8 @@ cd CHESS_WEB/
 ## Start Services
 
 ```bash
-kubectl apply -f k8s2.mysql.yaml 
-kubectl apply -f k8s2.public.yaml 
-kubectl apply -f k8s2.ingress.yaml
+kubectl apply -f k8s2.yaml             # using Kubernetes YAML (raw manifests) ; or
+helm install chess-web ./chess-web     # Helm Chart (templated Kubernetes)
 ```
 
 ## Check Services
@@ -63,8 +62,7 @@ Example:
 ## Forward Port
 
 ```bash
-kubectl port-forward service/public 5000:5000
-kubectl port-forward service/public 5000:80
+kubectl port-forward service/public 5000:80             # for localhost access
 ```
 
 ## Connect to the Public Website
@@ -81,9 +79,8 @@ NOTE: If you get redirected after restarting the app, you may need to wait a few
 ## Stop Services
 
 ```bash
-kubectl delete -f k8s2.mysql.yaml
-kubectl delete -f k8s2.public.yaml
-kubectl delete ingress nginx
+kubectl delete -f k8s2.yaml  # Kubernetes YAML
+helm uninstall chess-web     # Helm Chart
 ```
 
 # FILES
@@ -91,9 +88,8 @@ kubectl delete ingress nginx
 * Service + Deployment
 
 ```bash
-k8s2.mysql.yaml                  # Mysql 8.0 image + CHESS_DB database
-k8s2.public.yaml                 # Public frontend + backend + CHESS_DB data files
-k8s2.ingress.yaml                # Ingress config
+k8s2.yaml          # Kubernetes YAML
+chess-web/         # # Helm Chart        
 ```
 
 # SERVICES

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: public
 spec:
-  replicas: 1
+  replicas: {{ .Values.public.replicaCount }}
   selector:
     matchLabels:
       app: public

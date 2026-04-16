@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: mysql
 spec:
-  replicas: 1
+  replicas: {{ .Values.mysql.replicaCount }}
   selector:
     matchLabels:
       app: mysql
