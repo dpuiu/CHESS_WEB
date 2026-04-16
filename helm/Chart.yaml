@@ -1,0 +1,7 @@
+apiVersion: v2
+name: chess-web
+description: Simple Helm chart for MySQL + Public service + Ingress
+type: application
+#version: 0.1.0
+version: 2.7.0
+appVersion: "1.0"

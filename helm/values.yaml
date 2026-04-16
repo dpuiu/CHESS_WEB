@@ -1,0 +1,25 @@
+namespace: chess-web
+
+mysql:
+  image: docker.io/dpuiu2/chess_web-mysql:2.5
+  adminPassword: your_admin_password
+  adminUser: chess_admin
+  dbName: CHESS_DB
+  publicPassword: your_public_password
+  publicUser: chess_public
+  rootPassword: your_secure_password
+
+public:
+  image: docker.io/dpuiu2/chess_web-public:2.7
+#  image: docker.io/dpuiu2/chess_web-public:2.5
+  corsOrigins: https://dev.sites.idies.jhu.edu
+#  corsOrigins: https://localhost
+  flaskDebug: "0"
+  flaskPublicPort: "5000"
+  flaskAppRoot: /chess_app
+  frontendDist: /app/dist
+
+ingress:
+  host: dev.sites.idies.jhu.edu
+#  host: localhost
+

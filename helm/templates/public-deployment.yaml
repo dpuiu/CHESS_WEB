@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: public
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: public
+  template:
+    metadata:
+      labels:
+        app: public
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: public
+          image: {{ .Values.public.image }}
+          args:
+            - bash
+            - -c
+            - >
+              exec /opt/venv/bin/gunicorn
+              -w 2
+              -b 0.0.0.0:5000
+              --timeout 600
+              --log-level debug
+              --access-logfile -
+              --error-logfile -
+              app_public:app
+          env:
+            - name: CHESSDB_HOST
+              value: mysql
+            - name: CHESSDB_NAME
+              value: {{ .Values.mysql.dbName | quote }}
+            - name: CHESSDB_PASS
+              value: {{ .Values.mysql.publicPassword | quote }}
+            - name: CHESSDB_USER
+              value: {{ .Values.mysql.publicUser | quote }}
+            - name: CHESS_FRONTEND_DIST
+              value: {{ .Values.public.frontendDist | quote }}
+            - name: CORS_ALLOWED_ORIGINS
+              value: {{ .Values.public.corsOrigins | quote }}
+            - name: FLASK_DEBUG
+              value: {{ .Values.public.flaskDebug | quote }}
+            - name: FLASK_PUBLIC_PORT
+              value: {{ .Values.public.flaskPublicPort | quote }}
+            - name: FLASK_APPLICATION_ROOT
+              value: {{ .Values.public.flaskAppRoot | quote }}
+          ports:
+            - containerPort: 5000
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"

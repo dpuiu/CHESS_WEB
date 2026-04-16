@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mysql
+          image: {{ .Values.mysql.image }}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: CHESSDB_ADMIN_PASS
+              value: {{ .Values.mysql.adminPassword | quote }}
+            - name: CHESSDB_ADMIN_USER
+              value: {{ .Values.mysql.adminUser | quote }}
+            - name: CHESSDB_NAME
+              value: {{ .Values.mysql.dbName | quote }}
+            - name: CHESSDB_PUBLIC_PASS
+              value: {{ .Values.mysql.publicPassword | quote }}
+            - name: CHESSDB_PUBLIC_USER
+              value: {{ .Values.mysql.publicUser | quote }}
+            - name: MYSQL_ROOT_PASSWORD
+              value: {{ .Values.mysql.rootPassword | quote }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
