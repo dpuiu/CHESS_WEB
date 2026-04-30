@@ -14,9 +14,12 @@ from sqlalchemy import text
 from db.methods import *
 from db.db import db
 
+from extensions import cache
+
 public_bp = Blueprint('public', __name__)
 
 @public_bp.route('/globalData', methods=['GET'])
+@cache.cached(timeout=300)  # Cache for 5 minutes
 def global_data():
     """
     Fetches comprehensive data about the database for UI building
@@ -71,6 +74,7 @@ def global_data():
     return jsonify(data)
 
 @public_bp.route('/organisms', methods=['GET'])
+@cache.cached(timeout=300)  # Cache for 5 minutes
 def get_organisms():
     """
     Returns all organisms from the database.
@@ -85,6 +89,7 @@ def get_organisms():
         return jsonify({"success": False, "message": f"Failed to fetch organisms: {str(e)}"}), 500
 
 @public_bp.route('/assemblies', methods=['GET'])
+@cache.cached(timeout=300)  # Cache for 5 minutes
 def get_assemblies():
     """
     Returns all assemblies from the database.
@@ -99,6 +104,7 @@ def get_assemblies():
         return jsonify({"success": False, "message": f"Failed to fetch assemblies: {str(e)}"}), 500
 
 @public_bp.route('/assemblies/<int:assembly_id>/nomenclatures', methods=['GET'])
+@cache.cached(timeout=600, query_string=True)  # Cache per assembly_id for 10 minutes
 def get_assembly_nomenclatures(assembly_id):
     """
     Gets all nomenclatures for a specific assembly.
@@ -126,6 +132,7 @@ def get_assembly_nomenclatures(assembly_id):
 # ============================================================================
 
 @public_bp.route('/configurations', methods=['GET'])
+@cache.cached(timeout=600)  # Cache for 10 minutes
 def get_configurations():
     """
     Get all configurations
@@ -140,6 +147,7 @@ def get_configurations():
         return jsonify({"success": False, "message": f"Failed to get configurations: {str(e)}"}), 500
 
 @public_bp.route('/fasta/<int:assembly_id>/<string:nomenclature>', methods=['GET'])
+@cache.cached(timeout=3600, query_string=True)  # Cache for 1 hour
 def get_fasta(assembly_id, nomenclature):
     """
     Get the fasta file for a specific organism, assembly, source, version, and nomenclature.
@@ -169,6 +177,7 @@ def get_fasta(assembly_id, nomenclature):
         return jsonify({"success": False, "message": f"Failed to get fasta file: {str(e)}"}), 500
 
 @public_bp.route('/fai/<int:assembly_id>/<string:nomenclature>', methods=['GET'])
+@cache.cached(timeout=3600, query_string=True)  # Cache for 1 hour
 def get_fai(assembly_id, nomenclature):
     """
     Get the fai file for a specific organism, assembly, source, version, and nomenclature
@@ -196,6 +205,7 @@ def get_fai(assembly_id, nomenclature):
         return jsonify({"success": False, "message": f"Failed to get fai file: {str(e)}"}), 500
 
 @public_bp.route('/gff3bgz_jbrowse2/<int:sva_id>/<string:nomenclature>', methods=['GET'])
+@cache.cached(timeout=3600, query_string=True)  # Cache for 1 hour
 def get_gff3bgz_jbrowse2(sva_id, nomenclature):
     """
     Get the gff3bgz file for a specific organism, assembly, source, version, and nomenclature.
@@ -228,6 +238,7 @@ def get_gff3bgz_jbrowse2(sva_id, nomenclature):
         return jsonify({"success": False, "message": f"Failed to get gff3bgz file: {str(e)}"}), 500
 
 @public_bp.route('/gff3bgztbi/<int:sva_id>/<string:nomenclature>', methods=['GET'])
+@cache.cached(timeout=3600, query_string=True)  # Cache for 1 hour
 def get_gff3bgztbi(sva_id, nomenclature):
     """
     Get the gff3bgztbi (tabix index) file for a specific organism, assembly, source, version, and nomenclature.
@@ -252,6 +263,7 @@ def get_gff3bgztbi(sva_id, nomenclature):
         return jsonify({"success": False, "message": f"Failed to get gff3bgztbi file: {str(e)}"}), 500
 
 @public_bp.route('/source_file/<int:sva_id>/<string:nomenclature>/<string:file_type>', methods=['GET'])
+@cache.cached(timeout=3600, query_string=True)  # Cache for 1 hour
 def get_source_file(sva_id, nomenclature, file_type):
     """
     Get a file for a specific organism, assembly, source, version, and nomenclature
@@ -271,6 +283,7 @@ def get_source_file(sva_id, nomenclature, file_type):
         return jsonify({"success": False, "message": f"Failed to get source file: {str(e)}"}), 500
 
 @public_bp.route('/pdb/<int:td_id>', methods=['GET'])
+@cache.cached(timeout=600)  # Cache for 10 minutes
 def pdb_file_for_3dmoljs(td_id):
     """
     Retrieves PDB file content and metadata for a specific transcript data entry
@@ -301,6 +314,7 @@ def pdb_file_for_3dmoljs(td_id):
 def pdb_download(td_id):
     """
     Downloads the PDB file for a specific transcript data entry
+    (Not cached - redirects to external URL)
     """
     try:
         source_file = get_pdb_file(td_id)
@@ -312,6 +326,7 @@ def pdb_download(td_id):
         }), 500
 
 @public_bp.route('/genes/search', methods=['GET'])
+@cache.cached(timeout=300, query_string=True)  # Cache per search params for 5 minutes
 def search_genes():
     """
     Search genes with backend pagination and real-time filtering.
@@ -337,49 +352,10 @@ def search_genes():
         return jsonify({"success": False, "message": f"Failed to search genes: {str(e)}"}), 500
 
 @public_bp.route('/gene/<int:gid>', methods=['GET'])
+@cache.cached(timeout=600)  # Cache for 10 minutes
 def get_gene_by_gid(gid):
     """
     Get a gene by its gid with complete transcript information
-    {
-        "success": true,
-        "data": {
-            "gid": 12345,
-            "sva_id": 1,
-            "gene_id": "ENSG00000012048",
-            "name": "BRCA1",
-            "gene_type": "protein_coding",
-            "transcripts": [
-            {
-                "tid": 67890,
-                "transcript_id": "ENST00000357654",
-                "transcript_type": "protein_coding",
-                "sequence_id": 17,
-                "strand": false,
-                "coordinates": {
-                "start": 43044295,
-                "end": 43170245
-                },
-                "exons": [(43044295, 43045802), (43047643, 43049194)],
-                "cds": [(43044295, 43045802), (43047643, 43049194)]
-                ],
-                "datasets": [
-                {
-                    "dataset_id": 1,
-                    "dataset_name": "Expression Data",
-                    "dataset_description": "RNA-seq expression levels",
-                    "data_type": "expression",
-                    "data_entries": [
-                    {
-                        "td_id": 1001,
-                        "data": "15.7"
-                    }
-                    ]
-                }
-                ]
-            }
-            ]
-        }
-        }
     """
     try:
         result = get_full_gene_data(gid)
@@ -389,47 +365,10 @@ def get_gene_by_gid(gid):
         return jsonify({"success": False, "message": f"Failed to fetch gene data: {str(e)}"}), 500
 
 @public_bp.route('/transcript_data', methods=['GET'])
+@cache.cached(timeout=600, query_string=True)  # Cache per transcript params for 10 minutes
 def get_transcript_data():
     """
     Get full transcript data by tid and transcript_id
-    results example:
-    {
-        "success": true,
-        "data": {
-            "tid": 12345,
-            "transcript_id": "CHS.1000.1",
-            "transcript_type": "protein_coding",
-            "sequence_id": 17,
-            "strand": false,
-            "coordinates": {
-                "start": 43044295,
-                "end": 43170245
-            },
-            "exons": [(43044295, 43045802), (43047643, 43049194)],
-            "cds": [(43044295, 43045802), (43047643, 43049194)],
-            "nt_sequence": "GATTACA",
-            "datasets": [
-                {
-                    "dataset_id": 1,
-                    "dataset_name": "Expression Data",
-                    "dataset_description": "RNA-seq expression levels",
-                    "data_type": "expression",
-                    "data_entries": [
-                        {
-                            "td_id": 1001,
-                            "data": "15.7"
-                        }
-                    ]
-                }
-            ],
-            "attributes": {
-                "gene_id": "ENSG00000012048",
-                "gene_name": "BRCA1",
-                "gene_type": "protein_coding",
-                "transcript_type": "protein_coding",
-                "sequence_id": 17,
-            }
-    }
     """
     try:
         tid = request.args.get('tid', type=int)
@@ -448,6 +387,7 @@ def get_transcript_data():
         return jsonify({"success": False, "message": f"Failed to fetch transcript data: {str(e)}"}), 500
 
 @public_bp.route('/data_types', methods=['GET'])
+@cache.cached(timeout=600)  # Cache for 10 minutes
 def get_data_types():
     """
     Get all data types.
