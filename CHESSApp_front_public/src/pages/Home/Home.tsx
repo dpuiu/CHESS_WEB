@@ -33,7 +33,7 @@ const Home: React.FC = () => {
         <Col>
           <h1 className="text-center mb-4">Welcome to CHESS</h1>
           <p className="text-center mb-5">
-            A unified resource for downloading and customizing genome annotations.
+              A unified resource for exploring the CHESS human genome annotation.
           </p>
         </Col>
       </Row>
