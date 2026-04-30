@@ -1,6 +1,9 @@
 # Container Versions
-export V1=1.2
-export V2=2.7
+#export P1=1.2
+#export P2=2.7
+export P1=1.5
+export P2=2.10
+export M2=2.0
 
 # MySQL
 export MYSQL_ROOT_PASSWORD=your_secure_password
@@ -25,5 +28,7 @@ export CHESSDB_PUBLIC_USER=chess_public
 # Other
 export FLASK_DEBUG=0
 export GUNICORN_WORKERS=2
-export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"
-#export VITE_BASE_PATH="https://dev.sites.idies.jhu.edu"
+#export VITE_API_BASE_URL="http://localhost:5000/api"			# caching
+export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"		# caching
+export CACHE_TYPE=simple
+export CACHE_DEFAULT_TIMEOUT=300
