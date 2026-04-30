@@ -85,16 +85,28 @@ docker compose down -v
 
 ## Update Containers For Kubernetes (optional)
 
-* Build public v1+,v2+ & mysql v2+ (v2 includes the FASTA/GTF data files, MYSQL database)
+* Build public versions P1+,P2+ & mysql versions M2+ (the 2's include the FASTA/GTF data files, MYSQL database)
 
 ```bash
 # get/set container Versions
 head -n 3 env.sh  
-  export V1=1.0  # to run locally                                    
-  export V2=2.0  # to run locally
- 
-  export V1=1.2  # to run on JHU server
-  export V2=2.7  # to run on JHU server
+  export M2=2.0  # mysql image + database
+
+  export P1=1.0  # public image with VITE_API_BASE_URL="https://localhost:5000"                                   
+  export P2=2.0  # P1 + data files
+
+  export P1=1.2  # public image with VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api
+  export P2=2.7  # P1 + data files
+
+  #export P1=1.3  # public image with VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/chess-web/api
+  #export P2=2.8  # P1 + data files     
+
+  export P1=1.4  # public image with export VITE_API_BASE_URL="https://localhost:5000"  + caching
+  export P2=2.9  # P1 + data files
+
+  export P1=1.5  # public image with export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/chess-web/api"  + caching
+  export P2=2.10 # P1 + data files
+
 
 # set all env variables 
 . ./env.sh
@@ -103,23 +115,24 @@ cat ./env.sh  | egrep 'URL'
   export CHESSDB_DB_URL="ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.db.sql"
   export CHESSAPP_DATA_URL="ftp://ftp.ccb.jhu.edu/pub/dpuiu/CHESS_WEB/CHESSApp_prod_backups.data.tgz"
  
- #export VITE_API_BASE_URL="https://localhost:5000"                   # to run locally
+  export VITE_API_BASE_URL="https://localhost:5000/api"               # to run locally
   export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"      # to run on JHU server
 
-# build and tag chess_web-public V1
-docker build --no-cache -f Dockerfile.public  -t dpuiu2/chess_web-public:$V1 --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL .
-docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$V2 --build-arg CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL --build-arg V1=$V1 .
+# build and tag chess_web-mysql image (M2)
+docker build --no-cache -f Dockerfile2.mysql -t dpuiu2/chess_web-mysql:$M2  --build-arg CHESSAPP_DB_URL=$CHESSAPP_DB_URL .
 
-# build and tag chess_web-public & chess_web-mysql V2
-docker build --no-cache -f Dockerfile2.mysql -t dpuiu2/chess_web-mysql:$V2  --build-arg CHESSAPP_DB_URL=$CHESSAPP_DB_URL .
+# build and tag chess_web-public images (P1,P2)
+docker build --no-cache -f Dockerfile.public  -t dpuiu2/chess_web-public:$P1 --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL .
+docker build --no-cache -f Dockerfile2.public -t dpuiu2/chess_web-public:$P2 --build-arg CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL --build-arg P1=$P1 .
 ```
 
 * Push to Dockerhub
 
 ```bash
-docker push dpuiu2/chess_web-public:$V1
-docker push dpuiu2/chess_web-public:$V2
-docker push dpuiu2/chess_web-mysql:$V2
+docker push dpuiu2/chess_web-mysql:$M2
+
+docker push dpuiu2/chess_web-public:$P1
+docker push dpuiu2/chess_web-public:$P2
 ```
 
 * Test 
