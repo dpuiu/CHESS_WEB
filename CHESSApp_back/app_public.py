@@ -5,6 +5,8 @@ from db.db import db, initialize_paths
 from config import Config
 from middleware import setup_cors
 
+from extensions import cache
+
 # Path to the built frontend (optional - only needed for production)
 FRONTEND_DIST = os.environ.get('CHESS_FRONTEND_DIST')
 
@@ -18,6 +20,28 @@ else:
     # Development mode - frontend served by Vite dev server
     app = Flask(__name__)
 app.config.from_object(Config)
+
+# ============================================================================
+# CACHING CONFIGURATION
+# ============================================================================
+
+# Configure caching based on environment
+cache_type = os.environ.get('CACHE_TYPE', 'simple')  # 'simple'
+cache_config = {
+    'CACHE_TYPE': cache_type,
+}
+
+# Default cache timeout (seconds)
+cache_config['CACHE_DEFAULT_TIMEOUT'] = int(os.environ.get('CACHE_TIMEOUT', 300))
+
+app.config.update(cache_config)
+
+cache.init_app(app)
+
+
+# ============================================================================
+# DATABASE & MIDDLEWARE SETUP
+# ============================================================================
 
 # Setup middleware
 setup_cors(app, app_type='public')
@@ -80,7 +104,9 @@ def middleware_stats():
     return {
         'cors': 'enabled',
         'app_type': 'public',
-        'message': 'Simplified middleware - CORS only'
+        'cache_type': cache.cache._cache.__class__.__name__,
+        'cache_timeout': app.config.get('CACHE_DEFAULT_TIMEOUT'),
+        'message': 'Simplified middleware - CORS and caching enabled'
     }
 
 if __name__ == '__main__':
@@ -108,4 +134,9 @@ if __name__ == '__main__':
     if debug_mode:
         print("🐞 Debug mode is ON")
     
-    app.run(host=host, port=port, debug=debug_mode) 
+    # Display cache configuration
+    cache_type = app.config.get('CACHE_TYPE')
+    cache_timeout = app.config.get('CACHE_DEFAULT_TIMEOUT')
+    print(f"💾 Cache enabled: {cache_type} (timeout: {cache_timeout}s)")
+    
+    app.run(host=host, port=port, debug=debug_mode)
