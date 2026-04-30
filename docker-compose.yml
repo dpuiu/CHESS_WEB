@@ -69,7 +69,8 @@ services:
 #    build:
 #      context: ./
 #      dockerfile: Dockerfile.public
-    image: ghcr.io/dpuiu/chess_web-public:1.0
+#    image: ghcr.io/dpuiu/chess_web-public:1.0  # ok; replaces to test caching
+    image: dpuiu2/chess_web-public:1.4
     command: ["/opt/venv/bin/gunicorn", "-w", "${GUNICORN_WORKERS:-4}", "-b", "0.0.0.0:5000", "--timeout", "600", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-", "app_public:app"]
     restart: unless-stopped
     depends_on:
