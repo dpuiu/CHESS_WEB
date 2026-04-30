@@ -7,7 +7,7 @@ services:
 #      context: .
 #      dockerfile: Dockerfile.mysql
 #    image: dpuiu2/chess_web-mysql:2.0  # ok
-    image: dpuiu2/chess_web-mysql:2.5
+    image: dpuiu2/chess_web-mysql:2.5   # ok
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       CHESSDB_NAME: ${CHESSDB_NAME}
@@ -31,8 +31,9 @@ services:
 #    build:
 #      context: .
 #      dockerfile: Dockerfile.public
-    image: dpuiu2/chess_web-public:2.5  # localhost
-#    image: dpuiu2/chess_web-public:2.7 # vite ...
+#    image: dpuiu2/chess_web-public:2.5  # localhost; ok
+#    image: dpuiu2/chess_web-public:2.7  # dev vite 
+    image: dpuiu2/chess_web-public:2.9   # localhost vite+cache : ok
     depends_on:
       mysql:
         condition: service_healthy
