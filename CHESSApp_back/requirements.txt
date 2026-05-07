@@ -24,6 +24,3 @@ gunicorn>=21.0.0
 pyfaidx>=0.8.0
 biopython>=1.80
 intervaltree>=3.1.0
-
-# new
-Flask-Caching>=2.4.0

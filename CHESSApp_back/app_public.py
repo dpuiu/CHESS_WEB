@@ -1,47 +1,11 @@
-import os
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template
 from routes.public_routes import public_bp
 from db.db import db, initialize_paths
 from config import Config
 from middleware import setup_cors
 
-from extensions import cache
-
-# Path to the built frontend (optional - only needed for production)
-FRONTEND_DIST = os.environ.get('CHESS_FRONTEND_DIST')
-
-# Configure Flask app based on whether we're serving static files
-if FRONTEND_DIST:
-    app = Flask(__name__, 
-                static_folder=os.path.join(FRONTEND_DIST, 'assets'),
-                static_url_path='/chess_app/assets',
-                template_folder=FRONTEND_DIST)
-else:
-    # Development mode - frontend served by Vite dev server
-    app = Flask(__name__)
+app = Flask(__name__)
 app.config.from_object(Config)
-
-# ============================================================================
-# CACHING CONFIGURATION
-# ============================================================================
-
-# Configure caching based on environment
-cache_type = os.environ.get('CACHE_TYPE', 'simple')  # 'simple'
-cache_config = {
-    'CACHE_TYPE': cache_type,
-}
-
-# Default cache timeout (seconds)
-cache_config['CACHE_DEFAULT_TIMEOUT'] = int(os.environ.get('CACHE_TIMEOUT', 300))
-
-app.config.update(cache_config)
-
-cache.init_app(app)
-
-
-# ============================================================================
-# DATABASE & MIDDLEWARE SETUP
-# ============================================================================
 
 # Setup middleware
 setup_cors(app, app_type='public')
@@ -74,19 +38,6 @@ def server_error(e):
 @app.route('/')
 def index():
     """Serve the public application"""
-    if FRONTEND_DIST:
-        return render_template('index.html')
-    return {'message': 'CHESS API is running. Frontend served by Vite dev server in development mode.'}
-
-@app.route('/chess_app')
-@app.route('/chess_app/')
-@app.route('/chess_app/<path:path>')
-def serve_frontend(path=''):
-    """Serve the frontend application at /chess_app"""
-    if not FRONTEND_DIST:
-        return {'message': 'Frontend not configured. Set CHESS_FRONTEND_DIST for production.'}, 404
-    if path and os.path.exists(os.path.join(FRONTEND_DIST, path)):
-        return send_from_directory(FRONTEND_DIST, path)
     return render_template('index.html')
 
 # ============================================================================
@@ -104,9 +55,7 @@ def middleware_stats():
     return {
         'cors': 'enabled',
         'app_type': 'public',
-        'cache_type': cache.cache._cache.__class__.__name__,
-        'cache_timeout': app.config.get('CACHE_DEFAULT_TIMEOUT'),
-        'message': 'Simplified middleware - CORS and caching enabled'
+        'message': 'Simplified middleware - CORS only'
     }
 
 if __name__ == '__main__':
@@ -129,14 +78,4 @@ if __name__ == '__main__':
     print("📖 This application provides read-only access to the database")
     print(f"🌐 Access the public frontend at: http://{host}:{port}")
     
-    # Use configuration for debug mode
-    debug_mode = app.config.get('FLASK_DEBUG', False)
-    if debug_mode:
-        print("🐞 Debug mode is ON")
-    
-    # Display cache configuration
-    cache_type = app.config.get('CACHE_TYPE')
-    cache_timeout = app.config.get('CACHE_DEFAULT_TIMEOUT')
-    print(f"💾 Cache enabled: {cache_type} (timeout: {cache_timeout}s)")
-    
-    app.run(host=host, port=port, debug=debug_mode)
+    app.run(host=host, port=port, debug=True) 

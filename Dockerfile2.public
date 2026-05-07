@@ -18,7 +18,9 @@ USER 1000:1000
 ARG CHESSAPP_DATA_URL
 ENV CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL
 
-RUN curl -L --fail --retry 5 $CHESSAPP_DATA_URL | tar -xz -C /tmp/ 
+#RUN curl -L --fail --retry 5 $CHESSAPP_DATA_URL | tar -xz -C /tmp/ 
+RUN mkdir -p /tmp/CHESSApp_data/ 
+COPY CHESS_WEB/CHESSApp_prod_backups/data/ /tmp/CHESSApp_data/
 
 # Keep your original command
 CMD ["bash", "-c", "exec /opt/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 --timeout 600 --log-level debug --access-logfile - --error-logfile - app_public:app"]

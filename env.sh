@@ -1,8 +1,19 @@
 # Container Versions
-#export P1=1.2
-#export P2=2.7
-export P1=1.5
-export P2=2.10
+export P1=1.2
+export P2=2.7
+#export P1=1.5  # caching issues
+#export P2=2.10 # caching issues
+#export P1=1.6  # caching issues
+#export P2=2.11 # caching issues
+#export P1=1.6  # caching issues
+#export P2=2.11 # caching issues
+#export P1=1.7  # removed caching       
+#export P2=2.12 # remove caching       
+export P1=1.8  # removed caching dev server
+export P2=2.13 # remove caching dev server
+
+
+
 export M2=2.0
 
 # MySQL
@@ -28,7 +39,9 @@ export CHESSDB_PUBLIC_USER=chess_public
 # Other
 export FLASK_DEBUG=0
 export GUNICORN_WORKERS=2
-#export VITE_API_BASE_URL="http://localhost:5000/api"			# caching
-export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"		# caching
-export CACHE_TYPE=simple
-export CACHE_DEFAULT_TIMEOUT=300
+#export VITE_API_BASE_URL="http://localhost:5000/api"
+export VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"
+#VITE_API_BASE_URL="https://www.idies.jhu.edu/api"
+#VITE_API_BASE_URL="https://www.idies.jhu.edu/chess_web/api"
+#export CACHE_TYPE=simple
+#export CACHE_DEFAULT_TIMEOUT=300
