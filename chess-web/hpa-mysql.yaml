@@ -1,0 +1,22 @@
+{{- if .Values.autoscaling.mysql.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mysql
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mysql
+
+  minReplicas: {{ .Values.autoscaling.mysql.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.mysql.maxReplicas }}
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.mysql.cpuUtilization }}
+{{- end }}
