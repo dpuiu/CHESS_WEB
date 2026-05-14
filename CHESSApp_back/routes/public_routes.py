@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from timeit import main
-from flask import Blueprint, jsonify, request, send_from_directory, Response
+from flask import Blueprint, jsonify, request, send_from_directory, Response, redirect
 from sqlalchemy import text
 from db.methods import *
 from db.db import db
@@ -279,20 +279,11 @@ def pdb_file_for_3dmoljs(td_id):
         # Get PDB file info
         source_file = get_pdb_file(td_id)
         
-        # Read PDB file content
-        pdb_path = os.path.join(source_file["file_path"], source_file["file_name"])
-        
-        with open(pdb_path, 'r') as f:
-            pdb_content = f.read()
-        
-        # Extract basic metadata from PDB content
-        structure_info = extract_pdb_metadata(pdb_content)
-        
         response_data = {
             "td_id": td_id,
-            "pdb_content": pdb_content,
             "filename": source_file["file_name"],
-            "structure_info": structure_info
+            "pdb_content": "",
+            "url": source_file["url"]
         }
         
         return jsonify({
@@ -313,16 +304,7 @@ def pdb_download(td_id):
     """
     try:
         source_file = get_pdb_file(td_id)
-
-        print("source_file", source_file)
-
-        return send_from_directory(
-            source_file["file_path"],
-            source_file["file_name"],
-            download_name=source_file["file_name"],
-            as_attachment=True,
-            max_age=3600  # Cache control
-        )
+        return redirect(source_file["url"])
     except Exception as e:
         return jsonify({
             "success": False, 
@@ -452,13 +434,14 @@ def get_transcript_data():
     try:
         tid = request.args.get('tid', type=int)
         transcript_id = request.args.get('transcript_id', type=str)
+        sva_id = request.args.get('sva_id', type=int)
         assembly_id = request.args.get('assembly_id', type=int)
         nomenclature = request.args.get('nomenclature', type=str)
 
-        if not tid or not transcript_id or not assembly_id or not nomenclature:
-            return jsonify({"success": False, "message": "Missing required arguments: tid, transcript_id, assembly_id, and nomenclature"}), 400
+        if not tid or not transcript_id or not sva_id or not assembly_id or not nomenclature:
+            return jsonify({"success": False, "message": "Missing required arguments: tid, transcript_id, sva_id, assembly_id, and nomenclature"}), 400
 
-        result = get_full_transcript_data(tid, transcript_id, assembly_id, nomenclature)
+        result = get_full_transcript_data(tid, transcript_id, sva_id, assembly_id, nomenclature)
         return jsonify(result), 200 if result["success"] else 404
         
     except Exception as e:

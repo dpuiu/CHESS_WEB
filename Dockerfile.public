@@ -22,7 +22,8 @@ RUN ls /app/
 
 # use docker build --no-cache -f Dockerfile.public -t dpuiu2/chess_web-public:1.2 --build-arg VITE_API_BASE_URL="https://dev.sites.idies.jhu.edu/api"
 ARG VITE_API_BASE_URL
-RUN VITE_API_BASE_URL=$VITE_API_BASE_URL NODE_OPTIONS="--max-old-space-size=8192"  npm run build
+ARG VITE_BASE_PATH
+RUN VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_BASE_PATH=$VITE_BASE_PATH NODE_OPTIONS="--max-old-space-size=8192"  npm run build
 
 ########################################
 # ---- Stage 2: Backend Builder ----

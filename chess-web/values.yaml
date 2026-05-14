@@ -1,7 +1,6 @@
 namespace: chess-web
 
 mysql:
-  replicaCount: 1
   image: docker.io/dpuiu2/chess_web-mysql:2.5
   adminPassword: your_admin_password
   adminUser: chess_admin
@@ -11,17 +10,18 @@ mysql:
   rootPassword: your_secure_password
 
 public:
-  replicaCount: 1
-  image: docker.io/dpuiu2/chess_web-public:2.7
-#  image: docker.io/dpuiu2/chess_web-public:2.5
-  corsOrigins: https://dev.sites.idies.jhu.edu
-#  corsOrigins: https://localhost
+  image: docker.io/dpuiu2/chess_web-public:2.18
+# image: docker.io/dpuiu2/chess_web-public:2.7
+# image: docker.io/dpuiu2/chess_web-public:2.5
+  corsOrigins: https://web.idies.jhu.edu
+# corsOrigins: https://dev.sites.idies.jhu.edu
+# corsOrigins: https://localhost
   flaskDebug: "0"
   flaskPublicPort: "5000"
   flaskAppRoot: /chess_app
   frontendDist: /app/dist
 
 ingress:
-  host: dev.sites.idies.jhu.edu
+   host: web.idies.jhu.edu
+#  host: dev.sites.idies.jhu.edu
 #  host: localhost
-

@@ -1,8 +1,8 @@
 ########################################
 # ---- Stage 1: Frontend Builder ----
 ########################################
-ARG V1
-FROM dpuiu2/chess_web-public:${V1:-1.0}
+ARG P1
+FROM dpuiu2/chess_web-public:${P1:-1.0}
 
 # Create group and user
 RUN groupadd -g 1000 appgroup \
@@ -19,8 +19,8 @@ ARG CHESSAPP_DATA_URL
 ENV CHESSAPP_DATA_URL=$CHESSAPP_DATA_URL
 
 #RUN curl -L --fail --retry 5 $CHESSAPP_DATA_URL | tar -xz -C /tmp/ 
-RUN mkdir -p /tmp/CHESSApp_data/ 
-COPY CHESS_WEB/CHESSApp_prod_backups/data/ /tmp/CHESSApp_data/
+RUN mkdir -p /tmp/CHESSApp_prod_backups/data/
+COPY CHESS_WEB/CHESSApp_prod_backups/data /tmp/CHESSApp_prod_backups/data
 
 # Keep your original command
 CMD ["bash", "-c", "exec /opt/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 --timeout 600 --log-level debug --access-logfile - --error-logfile - app_public:app"]
