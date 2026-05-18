@@ -15,8 +15,17 @@
 #export P2=2.16 # remove caching dev server
 #export P1=1.11
 #export P2=2.17 # www.idies.jhu.edu
-export P1=1.13  # web.idies.jhu.edu
-export P2=2.18  # web.idies.jhu.edu
+#export P1=1.13  # web.idies.jhu.edu
+#export P2=2.18  # web.idies.jhu.edu
+#P1=1.14
+#P2=2.19
+#P1=1.15
+#P2=2.20
+#P1=1.16
+#P2=2.21
+P1=1.17
+#P2=2.22
+P2=2.23 # index files newer
 
 export M2=2.0
 
@@ -51,3 +60,4 @@ export GUNICORN_WORKERS=2
 #export CACHE_DEFAULT_TIMEOUT=300
 VITE_BASE_PATH="/chess_app"
 VITE_API_BASE_URL="/chess_app/api"
+#VITE_API_BASE_URL="/api"

@@ -7,18 +7,11 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
+#    - host: web.idies.jhu.edu
 #    - host: dev.sites.idies.jhu.edu
-    - host: localhost
+#    - host: localhost
       http:
         paths:
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: public
-                port:
-                  number: 80
-
           - path: /chess_app
             pathType: Prefix
             backend:
@@ -26,20 +19,3 @@ spec:
                 name: public
                 port:
                   number: 80
-
-          - path: /health
-            pathType: Prefix
-            backend:
-              service:
-                name: public
-                port:
-                  number: 80
-
-          - path: /middleware/stats
-            pathType: Prefix
-            backend:
-              service:
-                name: public
-                port:
-                  number: 80
-

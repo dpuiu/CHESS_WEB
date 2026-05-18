@@ -29,7 +29,7 @@ with app.app_context():
     initialize_paths()
 
 # Register only public routes (read-only)
-app.register_blueprint(public_bp, url_prefix='/api/public')
+app.register_blueprint(public_bp, url_prefix='/chess_app/api/public') 
 
 # ============================================================================
 # ERROR HANDLERS
@@ -69,12 +69,12 @@ def serve_frontend(path=''):
 # HEALTH CHECK
 # ============================================================================
 
-@app.route('/health')
+@app.route('/chess_app/health')
 def health_check():
     """Health check endpoint"""
     return {'status': 'healthy', 'service': 'CHESS Web App - public (Read-Only)'}
 
-@app.route('/middleware/stats')
+@app.route('/chess_app/middleware/stats')
 def middleware_stats():
     """Get middleware statistics"""
     return {

@@ -100,7 +100,7 @@ def extract_transcript_sequence(fasta_file_path, sequence_name, exons, strand):
             return {"success": False, "message": "FASTA file not accessible"}
         
         # Open the FASTA file with pyfaidx
-        fasta = Fasta(fasta_file_path)
+        fasta = Fasta(fasta_file_path,rebuild=False) # dpuiu 2026-05-16
             
         transcript_seq = ""
         for exon_start, exon_end in exons:
